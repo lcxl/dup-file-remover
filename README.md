@@ -37,3 +37,7 @@ docker run -d --name dup-file-remover \
 - 唯一索引 (file_path)  
 - 普通索引 (file_name)
 
+## 前端组件
+
+antd使用：https://ant-design.antgroup.com/docs/react/introduce-cn
+umi使用 ：https://ant-design.antgroup.com/docs/react/use-with-umi-cn
