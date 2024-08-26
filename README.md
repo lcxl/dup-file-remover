@@ -24,8 +24,8 @@ docker run -d --name dup-file-remover \
 | 字段 | 类型 | 说明 |
 |----|----|---|
 | id | int(10) unsigned | 主键ID |
-| file_path | varchar(256) | 文件路径 |
 | file_name | varchar(128) | 文件名 |
+| file_path | varchar(256) | 文件路径 |
 | md5 | char(32) | MD5值 |
 | size | bigint(20) | 文件大小 |
 | create_time | datetime | 创建时间 |
