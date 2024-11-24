@@ -20,6 +20,7 @@ impl FileInfo {
         let file_extension = std::path::Path::new(file_path).extension().unwrap().to_string_lossy().to_string();
         let create_time = metadata.created()?.elapsed()?;
         let update_time = metadata.modified()?.elapsed()?;
+        
         Ok(Self {
             file_path: file_path.to_string(),
             file_name,

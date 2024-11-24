@@ -13,4 +13,6 @@ env_logger = "0.11"
 log = "0.4"
 rusqlite = { version = "0.32", features = ["chrono", "bundled"] }
 chrono = { version = "0.4", features = ["serde"] }
-md-5 = "0.10.6"
+md-5 = "0.10"
+r2d2_sqlite = "0.25"
+r2d2 = "0.8"

@@ -1,7 +1,9 @@
-use rusqlite::{Connection, Result};
+use rusqlite::{Result};
 
 use super::file_info::FileInfo;
 
+pub type Pool = r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>;
+pub type Connection = r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager>;
 
 pub struct DatabaseManager {
     conn: Connection,

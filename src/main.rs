@@ -1,7 +1,46 @@
+mod controller;
 mod database;
+mod model;
 
-use  crate::database::sqlite::DatabaseManager;
+use actix_files as fs;
 
-fn main() {
-    println!("Hello, world!");
+use actix_web::{error, middleware::Logger, web, App, HttpResponse, HttpServer};
+use log::warn;
+
+use controller::scan::generate;
+use database::sqlite::{DatabaseManager, Pool};
+use r2d2_sqlite::SqliteConnectionManager;
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    // access logs are printed with the INFO level so ensure it is enabled by default
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+    //init database connection
+    //let database_manager = DatabaseManager::new("dfremover.db")?;
+    let manager = SqliteConnectionManager::file("dfremover.db");
+    let pool = Pool::new(manager).unwrap();
+    HttpServer::new(|| {
+        App::new()
+            .wrap(Logger::default())
+            .app_data(web::Data::new(pool.clone()))
+            .app_data(
+                web::JsonConfig::default()
+                    .limit(4096 * 1024 << 2)
+                    .error_handler(|err, req| {
+                        // <- create custom error response
+                        warn!("progress request {} err: {}", req.path(), err);
+                        return error::InternalError::from_response(
+                            err,
+                            HttpResponse::BadRequest().finish(),
+                        )
+                        .into();
+                    }),
+            ) // <- limit size of the payload (global configuration)
+            .service(web::resource("/scan/start").route(web::post().to(generate)))
+        //.service(fs::Files::new("/", "./static").index_file("index.html"))
+    })
+    .bind(("0.0.0.0", 8081))?
+    //.bind(("[::]", 8080))?
+    .run()
+    .await
 }

@@ -1,6 +1,6 @@
 # dup-file-remover
 
-dup file remover是一款查找和删除重复文件的软件，支持docker模式部署。后端使用rust编写，前端使用antd和react。
+dup file remover是一款查找和删除重复文件的软件，支持docker模式部署。后端使用rust编写，前端使用ant design和react。
 
 ## 安装
 
@@ -15,7 +15,7 @@ docker run -d --name dup-file-remover \
     lcxl/dup-file-remover:latest
 ```
 
-这里`/path/to/config`和`/path/to/data`是配置文件和数据的存储目录，可以根据实际情况进行修改。
+这里 `/path/to/config` 和 `/path/to/data` 是配置文件和数据的存储目录，`/path/to/data` 要指向到删除重复文件的目录，并且需要有读写权限，否则程序运行可能会有问题。
 
 ## 数据库表设计
 
