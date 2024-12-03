@@ -1,18 +1,41 @@
+use std::sync::Arc;
+
 use rusqlite::{Result};
 
 use super::file_info::FileInfo;
-
+use r2d2_sqlite::SqliteConnectionManager;
 pub type Pool = r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>;
 pub type Connection = r2d2::PooledConnection<r2d2_sqlite::SqliteConnectionManager>;
 
+
+
 pub struct DatabaseManager {
-    conn: Connection,
+    pool: Pool,
+}
+
+pub struct PoolDatabaseManager(Arc<DatabaseManager>);
+
+impl Clone for PoolDatabaseManager
+{
+    fn clone(&self) -> PoolDatabaseManager {
+        PoolDatabaseManager(self.0.clone())
+    }
+}
+
+impl PoolDatabaseManager {
+
+    pub fn new(path: &str) -> Result<Self> {
+        let mgr = Arc::new(DatabaseManager::new(path).unwrap());
+        Ok(PoolDatabaseManager(mgr))
+    }
 }
 
 impl DatabaseManager {
     pub fn new(path: &str) -> Result<Self> {
-        let conn = Connection::open(path)?;
-        Ok(Self { conn })
+        let manager = SqliteConnectionManager::file(path);
+        let pool = Pool::new(manager).unwrap();
+        
+        Ok(Self { pool })
     }
 
     pub fn create_table(&self) -> Result<()> {
@@ -31,14 +54,17 @@ impl DatabaseManager {
             INDEX(file_size),
             INDEX(file_extension)
         )";
-        self.conn.execute(sql, [])?;
+        let conn = self.pool.get().unwrap();
+        
+        conn.execute(sql, [])?;
         Ok(())
     }
 
     pub fn insert_file_info(&self, file_info: &FileInfo) -> Result<()> {
         let sql = "INSERT or UPDATE INTO files (file_path, file_name, file_extension, file_size, create_time, update_time, scan_time, md5) 
           VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
-        let mut result = match self.conn.execute(
+          let conn = self.pool.get().unwrap();
+        let mut result = match conn.execute(
             sql,
             (
                 &file_info.file_path,
@@ -61,10 +87,11 @@ impl DatabaseManager {
     }
 
     pub fn get_file_by_path(&self, file_path: &str) -> Result<FileInfo> {
+        let conn = self.pool.get().unwrap();
         let sql = "SELECT file_path, file_name, file_extension, file_size, create_time, update_time, scan_time, md5 
         FROM files 
         WHERE file_path = ?";
-        let mut stmt = self.conn.prepare(sql)?;
+        let mut stmt = conn.prepare(sql)?;
         let file_iter = stmt.query_row([file_path], |row| {
             Ok(FileInfo {
                 file_path: row.get(0)?,
@@ -83,10 +110,11 @@ impl DatabaseManager {
     }
 
     pub fn get_file_list_by_md5(&self, md5: &str) -> Result<Vec<FileInfo>> {
+        let conn = self.pool.get().unwrap();
         let sql = "SELECT file_path, file_name, file_extension, file_size, create_time, update_time, scan_time, md5 
         FROM files 
         WHERE md5 = ?";
-        let mut stmt = self.conn.prepare(sql)?;
+        let mut stmt = conn.prepare(sql)?;
         let file_iter = stmt.query_map([md5], |row| {
             Ok(FileInfo {
                 file_path: row.get(0)?,
@@ -107,21 +135,23 @@ impl DatabaseManager {
     }
 
     pub fn remove_file_by_path(&self, file_path: &str) -> Result<()> {
+        let conn = self.pool.get().unwrap();
         let sql = "DELETE FROM files 
         WHERE file_path = ?";
-        let mut stmt = self.conn.prepare(sql)?;
+        let mut stmt = conn.prepare(sql)?;
         stmt.execute([file_path])?;
         Ok(())
     }
 
     pub fn list_files(&self, page_no: i64, page_count: i64, min_file_size: i64, max_file_size: i64) -> Result<Vec<FileInfo>> {
+        let conn = self.pool.get().unwrap();
         let sql = "SELECT file_name, file_path, file_size, create_time, update_time, md5, count(md5) 
             FROM files 
             where ? <= file_size and ? >= file_size
             group by md5
             order by count(md5) desc, file_size desc
             LIMIT ? OFFSET ?";
-        let mut stmt = self.conn.prepare(sql)?;
+        let mut stmt = conn.prepare(sql)?;
         let file_iter = stmt.query_map([min_file_size, max_file_size, page_count, (page_no - 1) * page_count], |row| {
             Ok(FileInfo {
                 file_name: row.get(0)?,
