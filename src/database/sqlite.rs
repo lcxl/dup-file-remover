@@ -44,6 +44,7 @@ impl DatabaseManager {
             file_name TEXT NOT NULL,
             file_extension TEXT NULL,
             file_size INTEGER NOT NULL,
+            dev_id INTEGER NOT NULL,
             create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
             update_time DATETIME DEFAULT CURRENT_TIMESTAMP,
             scan_time DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -61,8 +62,8 @@ impl DatabaseManager {
     }
 
     pub fn insert_file_info(&self, file_info: &FileInfo) -> Result<()> {
-        let sql = "INSERT or UPDATE INTO files (file_path, file_name, file_extension, file_size, create_time, update_time, scan_time, md5) 
-          VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
+        let sql = "INSERT or UPDATE INTO files (file_path, file_name, file_extension, file_size, dev_id, create_time, update_time, scan_time, md5) 
+          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)";
           let conn = self.pool.get().unwrap();
         let mut result = match conn.execute(
             sql,
@@ -71,6 +72,7 @@ impl DatabaseManager {
                 &file_info.file_name,
                 &file_info.file_extension,
                 file_info.file_size,
+                file_info.dev_id,
                 &file_info.create_time,
                 &file_info.update_time,
                 &file_info.scan_time,
@@ -88,7 +90,7 @@ impl DatabaseManager {
 
     pub fn get_file_by_path(&self, file_path: &str) -> Result<FileInfo> {
         let conn = self.pool.get().unwrap();
-        let sql = "SELECT file_path, file_name, file_extension, file_size, create_time, update_time, scan_time, md5 
+        let sql = "SELECT file_path, file_name, file_extension, file_size, dev_id, create_time, update_time, scan_time, md5 
         FROM files 
         WHERE file_path = ?";
         let mut stmt = conn.prepare(sql)?;
@@ -98,10 +100,11 @@ impl DatabaseManager {
                 file_name: row.get(1)?,
                 file_extension: row.get(2)?,
                 file_size: row.get(3)?,
-                create_time: row.get(4)?,
-                update_time: row.get(5)?,
-                scan_time: row.get(6)?,
-                md5: row.get(7)?,
+                dev_id: row.get(4)?,
+                create_time: row.get(5)?,
+                update_time: row.get(6)?,
+                scan_time: row.get(7)?,
+                md5: row.get(8)?,
             })
         });
        
@@ -111,7 +114,7 @@ impl DatabaseManager {
 
     pub fn get_file_list_by_md5(&self, md5: &str) -> Result<Vec<FileInfo>> {
         let conn = self.pool.get().unwrap();
-        let sql = "SELECT file_path, file_name, file_extension, file_size, create_time, update_time, scan_time, md5 
+        let sql = "SELECT file_path, file_name, file_extension, file_size, dev_id, create_time, update_time, scan_time, md5 
         FROM files 
         WHERE md5 = ?";
         let mut stmt = conn.prepare(sql)?;
@@ -121,10 +124,11 @@ impl DatabaseManager {
                 file_name: row.get(1)?,
                 file_extension: row.get(2)?,
                 file_size: row.get(3)?,
-                create_time: row.get(4)?,
-                update_time: row.get(5)?,
-                scan_time: row.get(6)?,
-                md5: row.get(7)?,
+                dev_id: row.get(4)?,
+                create_time: row.get(5)?,
+                update_time: row.get(6)?,
+                scan_time: row.get(7)?,
+                md5: row.get(8)?,
             })
         });
         let mut files = Vec::new();

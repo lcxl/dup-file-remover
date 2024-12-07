@@ -1,16 +1,28 @@
+use std::os::linux::fs::MetadataExt;
+
 use chrono::NaiveDateTime;
 use md5::{Digest, Md5};
 
+pub struct InodeInfo {
+    pub inode: u64,// inode number
+    pub permissions: u32,
+    pub nlink: u64,
+    pub uid: u32,
+    pub gid: u32,
+    pub dev_id: u64, // New field to store the device ID
+    pub created: NaiveDateTime,
+    pub modified: NaiveDateTime,
+    pub md5: String,
+    pub size: u64,
+}
+
 pub struct FileInfo {
+    pub inode_info: InodeInfo, // Renamed field to use the new struct
     pub file_path: String,
     pub file_name: String,
     pub file_extension: String,
-    pub file_size: u64,
-    pub create_time: NaiveDateTime,
-    pub update_time: NaiveDateTime,
     // scan_time is the time when the file was last scanned
     pub scan_time: NaiveDateTime,
-    pub md5: String,
 }
 
 impl FileInfo {
@@ -18,18 +30,26 @@ impl FileInfo {
         let metadata = std::fs::metadata(file_path)?;
         let file_name = std::path::Path::new(file_path).file_name().unwrap().to_string_lossy().to_string();
         let file_extension = std::path::Path::new(file_path).extension().unwrap().to_string_lossy().to_string();
-        let create_time = metadata.created()?.elapsed()?;
-        let update_time = metadata.modified()?.elapsed()?;
-        
+        let created = metadata.created()?.elapsed()?;
+        let modified = metadata.modified()?.elapsed()?;
+        let inode_info = InodeInfo {
+            inode: metadata.st_ino(), // Get the inode number
+            dev_id: metadata.st_dev(), // New field to store the device ID
+            permissions: metadata.st_mode() as u32, // Get the permissions
+            nlink: metadata.st_nlink(), // Get the number of links
+            uid: metadata.st_uid(), // Get the user ID
+            gid: metadata.st_gid(), // Get the group ID
+            created: NaiveDateTime::from_timestamp_opt(created.as_secs() as i64, 0).unwrap(),
+            modified: NaiveDateTime::from_timestamp_opt(modified.as_secs() as i64, 0).unwrap(),
+            md5: format!("{:x}", Md5::new().chain_update(std::fs::read(file_path)?).finalize()),
+            size: metadata.len(),
+        };
         Ok(Self {
+            inode_info,
             file_path: file_path.to_string(),
             file_name,
             file_extension,
-            file_size: metadata.len(),
-            create_time: NaiveDateTime::from_timestamp_opt(create_time.as_secs() as i64, 0).unwrap(),
-            update_time: NaiveDateTime::from_timestamp_opt(update_time.as_secs() as i64, 0).unwrap(),
             scan_time,
-            md5: format!("{:x}", Md5::new().chain_update(std::fs::read(file_path)?).finalize()),
         })
     }
 }   
