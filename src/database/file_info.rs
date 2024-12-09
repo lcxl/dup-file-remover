@@ -5,11 +5,11 @@ use md5::{Digest, Md5};
 
 pub struct InodeInfo {
     pub inode: u64,// inode number
+    pub dev_id: u64, // New field to store the device ID
     pub permissions: u32,
     pub nlink: u64,
     pub uid: u32,
     pub gid: u32,
-    pub dev_id: u64, // New field to store the device ID
     pub created: NaiveDateTime,
     pub modified: NaiveDateTime,
     pub md5: String,
@@ -23,6 +23,11 @@ pub struct FileInfo {
     pub file_extension: String,
     // scan_time is the time when the file was last scanned
     pub scan_time: NaiveDateTime,
+}
+
+pub struct FileInfoWithMd5Count {
+    pub file_info: FileInfo,
+    pub md5_count: usize,
 }
 
 impl FileInfo {
