@@ -14,7 +14,7 @@ impl<T> RestResponse<T> {
             success: true,
             code: 0,
             message: None,
-            data: None
+            data: None,
         }
     }
 

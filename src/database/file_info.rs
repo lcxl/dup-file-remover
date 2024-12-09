@@ -4,7 +4,7 @@ use chrono::NaiveDateTime;
 use md5::{Digest, Md5};
 
 pub struct InodeInfo {
-    pub inode: u64,// inode number
+    pub inode: u64,  // inode number
     pub dev_id: u64, // New field to store the device ID
     pub permissions: u32,
     pub nlink: u64,
@@ -31,22 +31,38 @@ pub struct FileInfoWithMd5Count {
 }
 
 impl FileInfo {
-    pub fn new(file_path: &str, scan_time: NaiveDateTime) -> Result<Self,  Box<dyn std::error::Error>> {
+    pub fn new(
+        file_path: &str,
+        scan_time: NaiveDateTime,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let metadata = std::fs::metadata(file_path)?;
-        let file_name = std::path::Path::new(file_path).file_name().unwrap().to_string_lossy().to_string();
-        let file_extension = std::path::Path::new(file_path).extension().unwrap().to_string_lossy().to_string();
+        let file_name = std::path::Path::new(file_path)
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
+        let file_extension = std::path::Path::new(file_path)
+            .extension()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
         let created = metadata.created()?.elapsed()?;
         let modified = metadata.modified()?.elapsed()?;
         let inode_info = InodeInfo {
-            inode: metadata.st_ino(), // Get the inode number
-            dev_id: metadata.st_dev(), // New field to store the device ID
+            inode: metadata.st_ino(),               // Get the inode number
+            dev_id: metadata.st_dev(),              // New field to store the device ID
             permissions: metadata.st_mode() as u32, // Get the permissions
-            nlink: metadata.st_nlink(), // Get the number of links
-            uid: metadata.st_uid(), // Get the user ID
-            gid: metadata.st_gid(), // Get the group ID
+            nlink: metadata.st_nlink(),             // Get the number of links
+            uid: metadata.st_uid(),                 // Get the user ID
+            gid: metadata.st_gid(),                 // Get the group ID
             created: NaiveDateTime::from_timestamp_opt(created.as_secs() as i64, 0).unwrap(),
             modified: NaiveDateTime::from_timestamp_opt(modified.as_secs() as i64, 0).unwrap(),
-            md5: format!("{:x}", Md5::new().chain_update(std::fs::read(file_path)?).finalize()),
+            md5: format!(
+                "{:x}",
+                Md5::new()
+                    .chain_update(std::fs::read(file_path)?)
+                    .finalize()
+            ),
             size: metadata.len(),
         };
         Ok(Self {
@@ -57,4 +73,4 @@ impl FileInfo {
             scan_time,
         })
     }
-}   
+}

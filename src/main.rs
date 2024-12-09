@@ -8,7 +8,7 @@ use actix_web::{error, middleware::Logger, web, App, HttpResponse, HttpServer};
 use log::warn;
 
 use controller::scan::scan_files;
-use database::sqlite::{PoolDatabaseManager, Pool};
+use database::sqlite::{Pool, PoolDatabaseManager};
 use r2d2_sqlite::SqliteConnectionManager;
 
 #[actix_web::main]
