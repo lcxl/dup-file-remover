@@ -25,7 +25,7 @@ pub struct DatabaseManager {
     pool: Pool,
 }
 
-pub struct PoolDatabaseManager(Arc<DatabaseManager>);
+pub struct PoolDatabaseManager(pub Arc<DatabaseManager>);
 
 impl Clone for PoolDatabaseManager {
     fn clone(&self) -> PoolDatabaseManager {
