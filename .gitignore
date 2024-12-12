@@ -151,3 +151,5 @@ dist
 # Added by cargo
 
 /target
+
+*.db

@@ -66,15 +66,18 @@ impl DatabaseManager {
             size INTEGER NOT NULL,
             UNIQUE(dev_id,inode)
         );";
-        tx.execute(sql, [])?;
-        tx.execute(
-            "CREATE INDEX idx_inode_dev_id ON inode_info (inode,dev_id);",
-            [],
-        )?;
-        tx.execute("CREATE INDEX idx_md5 ON inode_info (md5);", [])?;
-        tx.execute("CREATE INDEX idx_size ON inode_info (size);", [])?;
-        tx.execute("CREATE INDEX idx_created ON inode_info (created);", [])?;
-        tx.execute("CREATE INDEX idx_modified ON inode_info (modified);", [])?;
+        let result = tx.execute(sql, [])?;
+        println!("create table result: {}", result);
+        if result > 0 {
+            tx.execute(
+                "CREATE INDEX idx_inode_dev_id ON inode_info (inode,dev_id);",
+                [],
+            )?;
+            tx.execute("CREATE INDEX idx_md5 ON inode_info (md5);", [])?;
+            tx.execute("CREATE INDEX idx_size ON inode_info (size);", [])?;
+            tx.execute("CREATE INDEX idx_created ON inode_info (created);", [])?;
+            tx.execute("CREATE INDEX idx_modified ON inode_info (modified);", [])?;
+        }
 
         let sql = "CREATE TABLE IF NOT EXISTS file_info (
             inode_info_id INTEGER NOT NULL,
@@ -84,14 +87,14 @@ impl DatabaseManager {
             scan_time DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(file_path)
         );";
-        tx.execute(sql, [])?;
-
-        tx.execute("CREATE INDEX idx_file_name ON file_info (file_name);", [])?;
-        tx.execute(
-            "CREATE INDEX idx_file_extension ON file_info (file_extension);",
-            [],
-        )?;
-
+        let result = tx.execute(sql, [])?;
+        if result > 0 {
+            tx.execute("CREATE INDEX idx_file_name ON file_info (file_name);", [])?;
+            tx.execute(
+                "CREATE INDEX idx_file_extension ON file_info (file_extension);",
+                [],
+            )?;
+        }
         tx.commit()?;
         Ok(())
     }
