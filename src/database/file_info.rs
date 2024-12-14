@@ -35,17 +35,15 @@ impl FileInfo {
         file_path: &str,
         scan_time: NaiveDateTime,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let metadata = std::fs::metadata(file_path)?;
-        let file_name = std::path::Path::new(file_path)
-            .file_name()
-            .unwrap()
-            .to_string_lossy()
-            .to_string();
-        let file_extension = std::path::Path::new(file_path)
-            .extension()
-            .unwrap()
-            .to_string_lossy()
-            .to_string();
+        let file_path = std::fs::canonicalize(file_path)?;
+        let metadata = std::fs::metadata(file_path.clone())?;
+        let file_name = file_path.file_name().unwrap().to_string_lossy().to_string();
+        let file_extension;
+        if file_path.extension().is_none() {
+            file_extension = "".to_string();
+        } else {
+            file_extension = file_path.extension().unwrap().to_string_lossy().to_string();
+        }
         let created = metadata.created()?.elapsed()?;
         let modified = metadata.modified()?.elapsed()?;
         let inode_info = InodeInfo {
@@ -60,14 +58,14 @@ impl FileInfo {
             md5: format!(
                 "{:x}",
                 Md5::new()
-                    .chain_update(std::fs::read(file_path)?)
+                    .chain_update(std::fs::read(file_path.to_string_lossy().to_string())?)
                     .finalize()
             ),
             size: metadata.len(),
         };
         Ok(Self {
             inode_info,
-            file_path: file_path.to_string(),
+            file_path: file_path.to_string_lossy().to_string(),
             file_name,
             file_extension,
             scan_time,

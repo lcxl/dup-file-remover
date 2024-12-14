@@ -27,11 +27,11 @@ impl<T> RestResponse<T> {
         }
     }
 
-    pub fn failed(code: i32, message: Option<String>) -> Self {
+    pub fn failed(code: i32, message: String) -> Self {
         RestResponse {
             success: false,
             code,
-            message,
+            message: Some(message),
             data: None,
         }
     }

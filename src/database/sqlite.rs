@@ -111,8 +111,8 @@ impl DatabaseManager {
 
     pub fn insert_file_info(&self, file_info: &FileInfo) -> Result<()> {
         let conn = self.pool.get().unwrap();
-        let sql = "INSERT INTO inode_info (inode, dev_id, permissions, nlink, uid, gid, created, modified, md5, size) 
-          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)";
+        let sql = "INSERT or replace INTO inode_info (inode, dev_id, permissions, nlink, uid, gid, created, modified, md5, size) 
+          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)";
         conn.execute(
             sql,
             (
@@ -129,7 +129,7 @@ impl DatabaseManager {
             ),
         )?;
         let last_insert_id: i64 = conn.last_insert_rowid();
-        let sql = "INSERT or UPDATE INTO file_info (inode_info_id, file_path, file_name, file_extension, scan_time) 
+        let sql = "insert or replace into file_info (inode_info_id, file_path, file_name, file_extension, scan_time) 
           VALUES (?1, ?2, ?3, ?4, ?5)";
         let mut result = match conn.execute(
             sql,

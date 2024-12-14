@@ -2,15 +2,13 @@ pub mod controller;
 pub mod database;
 pub mod model;
 
-use actix_files as fs;
 
 use actix_web::{error, middleware::Logger, web, App, HttpResponse, HttpServer};
 use actix_server::Server;
 use log::warn;
 
 use controller::scan::scan_files;
-use database::sqlite::{Pool, PoolDatabaseManager};
-use r2d2_sqlite::SqliteConnectionManager;
+use database::sqlite::PoolDatabaseManager;
 
 
 pub  fn run() -> Server {
