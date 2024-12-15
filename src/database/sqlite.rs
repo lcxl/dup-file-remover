@@ -110,10 +110,11 @@ impl DatabaseManager {
     }
 
     pub fn insert_file_info(&self, file_info: &FileInfo) -> Result<()> {
-        let conn = self.pool.get().unwrap();
+        let mut conn = self.pool.get().unwrap();
+        let tx = conn.transaction()?;
         let sql = "INSERT or replace INTO inode_info (inode, dev_id, permissions, nlink, uid, gid, created, modified, md5, size) 
           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)";
-        conn.execute(
+          tx.execute(
             sql,
             (
                 file_info.inode_info.inode,
@@ -128,10 +129,10 @@ impl DatabaseManager {
                 file_info.inode_info.size,
             ),
         )?;
-        let last_insert_id: i64 = conn.last_insert_rowid();
+        let last_insert_id: i64 = tx.last_insert_rowid();
         let sql = "insert or replace into file_info (inode_info_id, file_path, file_name, file_extension, scan_time) 
           VALUES (?1, ?2, ?3, ?4, ?5)";
-        let mut result = match conn.execute(
+        let mut result = match tx.execute(
             sql,
             (
                 last_insert_id,
@@ -147,6 +148,7 @@ impl DatabaseManager {
                 Err(_e)
             }
         };
+        tx.commit()?;
         return result;
     }
 
@@ -247,14 +249,14 @@ impl DatabaseManager {
     }
 
     pub fn remove_file_by_path(&self, file_path: &str) -> Result<()> {
-        let conn = self.pool.get().unwrap();
+        let mut conn = self.pool.get().unwrap();
+        let tx = conn.transaction()?;
         let sql = "DELETE FROM inode_info as a1 WHERE a1.id in (select inode_info_id from file_info where file_path = ?)";
-        let mut stmt = conn.prepare(sql)?;
-        stmt.execute([file_path])?;
+        tx.execute(sql, [file_path])?;
 
         let sql = "DELETE FROM file_info WHERE file_path = ?";
-        let mut stmt = conn.prepare(sql)?;
-        stmt.execute([file_path])?;
+        tx.execute(sql, [file_path])?;
+        tx.commit()?;
         Ok(())
     }
 
@@ -272,8 +274,7 @@ from inode_info as a1,
 file_info as a2, 
 (SELECT  md5, count(md5) as md5_count
             FROM inode_info
-            WHERE
-             ? <= size and ? >=size
+            WHERE size >= ? and size < ?
             group by md5) as a3
             where a1.id = a2.inode_info_id and a1.md5 = a3.md5 
             order by a3.md5_count desc, a1.size desc

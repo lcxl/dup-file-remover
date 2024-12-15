@@ -3,6 +3,7 @@ use std::os::linux::fs::MetadataExt;
 use chrono::NaiveDateTime;
 use md5::{Digest, Md5};
 
+#[derive(Debug)]
 pub struct InodeInfo {
     pub inode: u64,  // inode number
     pub dev_id: u64, // New field to store the device ID
@@ -16,6 +17,7 @@ pub struct InodeInfo {
     pub size: u64,
 }
 
+#[derive(Debug)]
 pub struct FileInfo {
     pub inode_info: InodeInfo, // Renamed field to use the new struct
     pub file_path: String,
@@ -25,6 +27,7 @@ pub struct FileInfo {
     pub scan_time: NaiveDateTime,
 }
 
+#[derive(Debug)]
 pub struct FileInfoWithMd5Count {
     pub file_info: FileInfo,
     pub md5_count: usize,
