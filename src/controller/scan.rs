@@ -2,6 +2,7 @@ use std::path::Path;
 
 use actix_web::{web, HttpResponse, Error as AWError};
 use chrono::Utc;
+use log::info;
 use crate::database::file_info::FileInfo;
 use crate::database::sqlite::{Pool, PoolDatabaseManager};
 use crate::model::scan::ScanRequest;
@@ -28,7 +29,7 @@ pub async fn scan_all_files(path: &Path, db: &PoolDatabaseManager) -> Result<(),
     if path.is_dir() {
         let mut entries = tokio::fs::read_dir(path).await?;
         while let Some(entry) = entries.next_entry().await? {
-            println!("{:?}", entry.path()); // For demonstration purposes, print the path of each file/directory.
+            info!("{:?}", entry.path()); // For demonstration purposes, print the path of each file/directory.
             if path.is_dir() {
                 let sub_path = entry.path();
                 let list_task = Box::pin(scan_all_files(&sub_path, db));

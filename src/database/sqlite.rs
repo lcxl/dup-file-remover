@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use chrono::NaiveDateTime;
+use log::{error, info};
 use rusqlite::Result;
 
 use super::file_info::{FileInfo, FileInfoWithMd5Count, InodeInfo};
@@ -67,7 +68,7 @@ impl DatabaseManager {
             UNIQUE(dev_id,inode)
         );";
         let result = tx.execute(sql, [])?;
-        println!("create table result: {}", result);
+        info!("create table result: {}", result);
         if result > 0 {
             tx.execute(
                 "CREATE INDEX idx_inode_dev_id ON inode_info (inode,dev_id);",
@@ -144,7 +145,7 @@ impl DatabaseManager {
         ) {
             Ok(updated) => Ok(()),
             Err(_e) => {
-                println!("Error inserting file info");
+                error!("Error inserting file info");
                 Err(_e)
             }
         };
