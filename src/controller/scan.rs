@@ -9,7 +9,7 @@ use crate::model::scan::ScanRequest;
 use crate::model::common::RestResponse;
 
 
-pub async fn scan_files(requst_json: web::Json<ScanRequest>, db: web::Data<PoolDatabaseManager>) -> Result<HttpResponse, AWError>  {
+pub async fn start_scan(requst_json: web::Json<ScanRequest>, db: web::Data<PoolDatabaseManager>) -> Result<HttpResponse, AWError>  {
     
     let scan_path = &requst_json.scan_path;
     let path = Path::new(scan_path);
@@ -22,6 +22,10 @@ pub async fn scan_files(requst_json: web::Json<ScanRequest>, db: web::Data<PoolD
     let test_none_response: RestResponse<()> = RestResponse::succeed();
     HttpResponse::Ok().json(test_none_response);
     
+    Ok(HttpResponse::Ok().json(RestResponse::succeed_with_data(None::<()>)))
+}
+
+pub async fn stop_scan(requst_json: web::Json<ScanRequest>, db: web::Data<PoolDatabaseManager>)-> Result<HttpResponse, AWError>  {
     Ok(HttpResponse::Ok().json(RestResponse::succeed_with_data(None::<()>)))
 }
 

@@ -111,11 +111,19 @@ impl DatabaseManager {
     }
 
     pub fn insert_file_info(&self, file_info: &FileInfo) -> Result<()> {
+        let file_info_result = self.get_file_by_path(&file_info.file_path);
+        if file_info_result.is_ok() {
+            if file_info.inode_info == file_info_result.unwrap().inode_info {
+                info!("File already exists with the same inode. Skipping insert.");
+                return Ok(());
+            }
+        }
+
         let mut conn = self.pool.get().unwrap();
         let tx = conn.transaction()?;
         let sql = "INSERT or replace INTO inode_info (inode, dev_id, permissions, nlink, uid, gid, created, modified, md5, size) 
           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)";
-          tx.execute(
+        tx.execute(
             sql,
             (
                 file_info.inode_info.inode,
@@ -133,7 +141,7 @@ impl DatabaseManager {
         let last_insert_id: i64 = tx.last_insert_rowid();
         let sql = "insert or replace into file_info (inode_info_id, file_path, file_name, file_extension, scan_time) 
           VALUES (?1, ?2, ?3, ?4, ?5)";
-        let mut result = match tx.execute(
+        let result = match tx.execute(
             sql,
             (
                 last_insert_id,
@@ -168,6 +176,9 @@ impl DatabaseManager {
                 scan_time: row.get(4)?,
             })
         });
+        if file_iter.is_err() {
+            return Err(file_iter.err().unwrap());
+        }
         let file_info_dao = file_iter?;
 
         let sql =
@@ -175,7 +186,7 @@ impl DatabaseManager {
         from inode_info
         WHERE id = ? ";
         let mut stmt = conn.prepare(sql)?;
-        let inode_info_dao = stmt.query_row([file_info_dao.inode_info_id], |row| {
+        let inode_info_iter = stmt.query_row([file_info_dao.inode_info_id], |row| {
             Ok(InodeInfo {
                 inode: row.get(0)?,
                 dev_id: row.get(1)?,
@@ -188,20 +199,24 @@ impl DatabaseManager {
                 md5: row.get(8)?,
                 size: row.get(9)?,
             })
-        })?;
+        });
+        if inode_info_iter.is_err() {
+            return Err(inode_info_iter.err().unwrap());
+        }
 
+        let inode_info = inode_info_iter?;
         let file_info = FileInfo {
             inode_info: InodeInfo {
-                inode: inode_info_dao.inode,
-                dev_id: inode_info_dao.dev_id,
-                permissions: inode_info_dao.permissions,
-                nlink: inode_info_dao.nlink,
-                uid: inode_info_dao.uid,
-                gid: inode_info_dao.gid,
-                created: inode_info_dao.created,
-                modified: inode_info_dao.modified,
-                md5: inode_info_dao.md5,
-                size: inode_info_dao.size,
+                inode: inode_info.inode,
+                dev_id: inode_info.dev_id,
+                permissions: inode_info.permissions,
+                nlink: inode_info.nlink,
+                uid: inode_info.uid,
+                gid: inode_info.gid,
+                created: inode_info.created,
+                modified: inode_info.modified,
+                md5: inode_info.md5,
+                size: inode_info.size,
             },
             file_name: file_info_dao.file_name,
             file_path: file_info_dao.file_path,

@@ -13,10 +13,24 @@ pub struct InodeInfo {
     pub gid: u32,
     pub created: NaiveDateTime,
     pub modified: NaiveDateTime,
-    pub md5: String,
+    pub md5: Option<String>,
     pub size: u64,
 }
 
+impl PartialEq<InodeInfo> for InodeInfo {
+    fn eq(&self, other: &Self) -> bool {
+        self.inode == other.inode
+            && self.size == other.size
+            && self.dev_id == other.dev_id
+            && self.permissions == other.permissions
+            && self.nlink == other.nlink
+            && self.uid == other.uid
+            && self.gid == other.gid
+            && self.created == other.created
+            && self.modified == other.modified
+            && self.size == other.size
+    }
+}
 #[derive(Debug)]
 pub struct FileInfo {
     pub inode_info: InodeInfo, // Renamed field to use the new struct
@@ -58,12 +72,7 @@ impl FileInfo {
             gid: metadata.st_gid(),                 // Get the group ID
             created: NaiveDateTime::from_timestamp_opt(created.as_secs() as i64, 0).unwrap(),
             modified: NaiveDateTime::from_timestamp_opt(modified.as_secs() as i64, 0).unwrap(),
-            md5: format!(
-                "{:x}",
-                Md5::new()
-                    .chain_update(std::fs::read(file_path.to_string_lossy().to_string())?)
-                    .finalize()
-            ),
+            md5: None, // Initialize MD5 as None
             size: metadata.len(),
         };
         Ok(Self {
@@ -73,5 +82,15 @@ impl FileInfo {
             file_extension,
             scan_time,
         })
+    }
+
+    pub fn update_md5(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        self.inode_info.md5 = Some(format!(
+            "{:x}",
+            Md5::new()
+                .chain_update(std::fs::read(self.file_path.to_string())?)
+                .finalize()
+        ));
+        Ok(())
     }
 }
