@@ -1,6 +1,6 @@
 use std::os::linux::fs::MetadataExt;
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Local, NaiveDateTime};
 use md5::{Digest, Md5};
 
 #[derive(Debug)]
@@ -11,8 +11,8 @@ pub struct InodeInfo {
     pub nlink: u64,
     pub uid: u32,
     pub gid: u32,
-    pub created: NaiveDateTime,
-    pub modified: NaiveDateTime,
+    pub created: DateTime<Local>,
+    pub modified: DateTime<Local>,
     pub md5: Option<String>,
     pub size: u64,
 }
@@ -39,7 +39,7 @@ pub struct FileInfo {
     pub file_name: String,
     pub file_extension: String,
     // scan_time is the time when the file was last scanned
-    pub scan_time: NaiveDateTime,
+    pub scan_time: DateTime<Local>,
 }
 
 #[derive(Debug)]
@@ -51,7 +51,7 @@ pub struct FileInfoWithMd5Count {
 impl FileInfo {
     pub fn new(
         file_path: &str,
-        scan_time: NaiveDateTime,
+        scan_time: DateTime<Local>,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let file_path = std::fs::canonicalize(file_path)?;
         let metadata = std::fs::metadata(file_path.clone())?;
@@ -62,8 +62,8 @@ impl FileInfo {
         } else {
             file_extension = file_path.extension().unwrap().to_string_lossy().to_string();
         }
-        let created = metadata.created()?.elapsed()?;
-        let modified = metadata.modified()?.elapsed()?;
+        let created =DateTime::<Local>::from(metadata.created()?);
+        let modified =DateTime::<Local>::from(metadata.modified()?);
         let inode_info = InodeInfo {
             inode: metadata.st_ino(),               // Get the inode number
             dev_id: metadata.st_dev(),              // New field to store the device ID
@@ -71,8 +71,8 @@ impl FileInfo {
             nlink: metadata.st_nlink(),             // Get the number of links
             uid: metadata.st_uid(),                 // Get the user ID
             gid: metadata.st_gid(),                 // Get the group ID
-            created: NaiveDateTime::from_timestamp_opt(created.as_secs() as i64, 0).unwrap(),
-            modified: NaiveDateTime::from_timestamp_opt(modified.as_secs() as i64, 0).unwrap(),
+            created,
+            modified,
             md5: None, // Initialize MD5 as None
             size: metadata.len(),
         };

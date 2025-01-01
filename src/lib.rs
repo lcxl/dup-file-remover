@@ -16,6 +16,7 @@ pub fn run() ->  std::io::Result<Server> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let database_manager = PoolDatabaseManager::new("dfremover.db").unwrap();
+    database_manager.0.create_tables();
     //start the server
     let mut http_server = HttpServer::new(move || {
         App::new()

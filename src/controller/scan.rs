@@ -6,7 +6,7 @@ use crate::database::sqlite::{Pool, PoolDatabaseManager};
 use crate::model::common::RestResponse;
 use crate::model::scan::ScanRequest;
 use actix_web::{web, Error as AWError, HttpResponse};
-use chrono::Utc;
+use chrono::{DateTime, Local, Utc};
 use log::{debug, error, info, warn};
 
 static STOP_SCAN_FLAG: AtomicBool = AtomicBool::new(false);
@@ -104,7 +104,7 @@ async fn scan_file(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut file_info = FileInfo::new(
         file_path.to_string_lossy().to_string().as_str(),
-        Utc::now().naive_utc(),
+        Local::now(),
     )?;
     let manager = &db.0;
     let get_file_result = manager.get_file_by_path(&file_info.file_path);
@@ -112,16 +112,22 @@ async fn scan_file(
         // check file update time and update if necessary
         let db_file_info = get_file_result.unwrap();
         if db_file_info.inode_info == file_info.inode_info {
-            info!(
+            debug!(
                 "File '{}' already exists and is same in database, skipping",
                 file_info.file_path
             );
             return Ok(());
+        } else {
+            info!(
+                "File '{}' is changed, need to update",
+                file_info.file_path
+            );
         }
+    } else {
+        info!("Add new file '{}' to db", file_info.file_path);
     }
     // update file md5 and insert into db
     file_info.update_md5()?;
     manager.insert_file_info(&file_info)?;
-    info!("Added file '{}' to db", file_info.file_path);
     Ok(())
 }

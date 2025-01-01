@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Local, NaiveDateTime};
 use log::{error, info};
 use rusqlite::Result;
 
@@ -14,7 +14,7 @@ pub struct FileInfoDAO {
     pub file_path: String,
     pub file_name: String,
     pub file_extension: String,
-    pub scan_time: NaiveDateTime,
+    pub scan_time: DateTime<Local>,
 }
 
 pub struct InodeInfoDAO {
