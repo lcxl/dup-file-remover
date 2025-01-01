@@ -111,14 +111,6 @@ impl DatabaseManager {
     }
 
     pub fn insert_file_info(&self, file_info: &FileInfo) -> Result<()> {
-        let file_info_result = self.get_file_by_path(&file_info.file_path);
-        if file_info_result.is_ok() {
-            if file_info.inode_info == file_info_result.unwrap().inode_info {
-                info!("File already exists with the same inode. Skipping insert.");
-                return Ok(());
-            }
-        }
-
         let mut conn = self.pool.get().unwrap();
         let tx = conn.transaction()?;
         let sql = "INSERT or replace INTO inode_info (inode, dev_id, permissions, nlink, uid, gid, created, modified, md5, size) 
@@ -153,7 +145,7 @@ impl DatabaseManager {
         ) {
             Ok(updated) => Ok(()),
             Err(_e) => {
-                error!("Error inserting file info");
+                error!("Error inserting file info: {}", _e);
                 Err(_e)
             }
         };

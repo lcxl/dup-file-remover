@@ -39,11 +39,30 @@ docker run -d --name dup-file-remover \
 
 ## 扫描文件的技术实现
 
-为了保证扫描任务的唯一性，我们采用了分布式锁的方式。在扫描开始前，会尝试获取一个全局锁，如果获取成功，则进行扫描任务；如果获取失败，则表示有其他实例正在执行扫描任务，当前实例则等待一段时间后重试。
+为了保证扫描任务的唯一性，我们采用了全局锁的方式。在扫描开始前，会尝试获取一个全局锁，如果获取成功，则进行扫描任务；如果获取失败，则表示有其他实例正在执行扫描任务，当前请求返回错误信息。
 
+## 接口实现
 
+### 开始扫描
+
+curl 示例：
+```bash
+curl -X POST http://localhost:8081/api/scan/start \
+-H "Content-Type: application/json" \
+-d '{"scan_path": "~/"}'
+```
+
+### 停止扫描
+
+curl 示例：
+
+```bash
+curl -X POST http://localhost:8081/api/scan/stop \
+-H "Content-Type: application/json"
+```
 
 ## 前端组件
 
 antd使用：https://ant-design.antgroup.com/docs/react/introduce-cn
+
 umi使用 ：https://ant-design.antgroup.com/docs/react/use-with-umi-cn

@@ -16,7 +16,8 @@ pub struct InodeInfo {
     pub md5: Option<String>,
     pub size: u64,
 }
-
+/// Implement PartialEq for InodeInfo to compare two instances based on their fields.
+/// This comparison ignores the md5 field.
 impl PartialEq<InodeInfo> for InodeInfo {
     fn eq(&self, other: &Self) -> bool {
         self.inode == other.inode
