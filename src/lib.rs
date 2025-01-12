@@ -5,7 +5,7 @@ pub mod utils;
 
 use actix_server::Server;
 use actix_web::{error, middleware::Logger, web, App, HttpResponse, HttpServer};
-use log::{info, warn, error};
+use log::{info, warn};
 
 use controller::scan::{start_scan, stop_scan};
 use database::sqlite::PoolDatabaseManager;
@@ -16,7 +16,7 @@ pub fn run() ->  std::io::Result<Server> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let database_manager = PoolDatabaseManager::new("dfremover.db").unwrap();
-    database_manager.0.create_tables();
+    database_manager.0.create_tables().unwrap();
     //start the server
     let mut http_server = HttpServer::new(move || {
         App::new()
@@ -41,7 +41,7 @@ pub fn run() ->  std::io::Result<Server> {
     });
 
     if check_ipv6_available() {
-        http_server = http_server.bind(("[::]:8081"))?;
+        http_server = http_server.bind("[::]:8081")?;
         info!("Server started at http://[::]:8081");
     } else {
         http_server = http_server.bind(("0.0.0.0", 8081))?;

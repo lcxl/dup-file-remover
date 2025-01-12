@@ -1,12 +1,13 @@
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::database::file_info::FileInfo;
-use crate::database::sqlite::{Pool, PoolDatabaseManager};
+use crate::database::sqlite::PoolDatabaseManager;
 use crate::model::common::RestResponse;
 use crate::model::scan::ScanRequest;
 use actix_web::{web, Error as AWError, HttpResponse};
-use chrono::{DateTime, Local, Utc};
+use chrono::Local;
 use log::{debug, error, info, warn};
 
 static STOP_SCAN_FLAG: AtomicBool = AtomicBool::new(false);
@@ -67,12 +68,17 @@ pub async fn scan_all_files(
     db: &PoolDatabaseManager,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let path = Path::new(scan_path);
-    _scan_all_files(path, db).await
+    let start = SystemTime::now();
+    let scan_version = start
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards").as_secs();
+    _scan_all_files(path, scan_version, db).await
 }
 
 /// Scan all files in a directory and its subdirectories.
 async fn _scan_all_files(
     path: &Path,
+    scan_version: u64,
     db: &PoolDatabaseManager,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if path.is_dir() {
@@ -80,50 +86,57 @@ async fn _scan_all_files(
         while let Some(entry) = entries.next_entry().await? {
             if STOP_SCAN_FLAG.load(Ordering::Acquire) {
                 info!("Received stop scan flag, stop scanning");
+                db.0.remove_deleted_inode()?;
                 return Ok(());
             }
             debug!("{:?}", entry.path()); // For demonstration purposes, print the path of each file/directory.
             if path.is_dir() {
                 let sub_path = entry.path();
-                let list_task = Box::pin(_scan_all_files(&sub_path, db));
+                let list_task = Box::pin(_scan_all_files(&sub_path, scan_version, db));
                 list_task.await?;
             } else {
-                scan_file(&entry.path(), db).await?;
+                scan_file(&entry.path(), scan_version, db).await?;
             }
         }
+        //remove deleted files from db if path is directory
+        db.0.remove_deleted_files(path.to_string_lossy().to_string().as_str(), scan_version)?;
     } else {
-        scan_file(path, db).await?;
+        scan_file(path, scan_version, db).await?;
     }
-
     Ok(())
 }
 
 async fn scan_file(
     file_path: &Path,
+    scan_version: u64,
     db: &PoolDatabaseManager,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut file_info = FileInfo::new(
         file_path.to_string_lossy().to_string().as_str(),
+        scan_version,
         Local::now(),
     )?;
     let manager = &db.0;
-    let get_file_result = manager.get_file_by_path(&file_info.file_path);
+    let get_file_result = manager.get_file_by_path(&file_info.dir_path, &file_info.file_name);
     if get_file_result.is_ok() {
         // check file update time and update if necessary
         let db_file_info = get_file_result.unwrap();
         if db_file_info.inode_info == file_info.inode_info {
             debug!(
-                "File '{}' already exists and is same in database, skipping",
-                file_info.file_path
+                "File '{}' already exists and is same in database, update version from {} to {}",
+                file_info.file_path, db_file_info.version, file_info.version
             );
+            manager.update_version(&file_info)?;
             return Ok(());
         } else {
-            info!(
-                "File '{}' is changed, need to update",
-                file_info.file_path
-            );
+            info!("File '{}' is changed, need to update", file_info.file_path);
         }
     } else {
+        info!(
+            "File '{}' not found in database, or error: {:?}",
+            file_info.file_path,
+            get_file_result.err().unwrap()
+        );
         info!("Add new file '{}' to db", file_info.file_path);
     }
     // update file md5 and insert into db

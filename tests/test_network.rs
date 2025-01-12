@@ -1,4 +1,3 @@
-use std::net::{IpAddr, Ipv6Addr};
 
 use dup_file_remover::utils;
 

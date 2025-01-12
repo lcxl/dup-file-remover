@@ -49,7 +49,7 @@ curl 示例：
 ```bash
 curl -X POST http://localhost:8081/api/scan/start \
 -H "Content-Type: application/json" \
--d '{"scan_path": "~/"}'
+-d '{"scan_path": "/home/coder/dup-file-remover/target/release"}'
 ```
 
 ### 停止扫描
