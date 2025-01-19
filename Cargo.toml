@@ -17,4 +17,5 @@ chrono = { version = "0.4", features = ["serde"] }
 md-5 = "0.10"
 r2d2_sqlite = "0.25"
 r2d2 = "0.8"
-tokio={version = "1.42", features = ["full"]}
+tokio = { version = "1.43", features = ["full"] }
+utoipa = { version = "5", features = ["macros", "actix_extras"] }
