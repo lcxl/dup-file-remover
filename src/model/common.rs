@@ -1,68 +1,58 @@
 use serde::Serialize;
+use utoipa::ToSchema;
 
-#[derive(Serialize)]
-pub struct RestResponse<T> {
+#[derive(Serialize, ToSchema)]
+pub struct RestResponse<T : ToSchema> {
     success: bool,
     code: i32,
     message: Option<String>,
     data: Option<T>,
 }
+pub struct ErrorCode(i32);
 
-impl<T> RestResponse<T> {
+impl ErrorCode {
+    pub const SUCCESS: ErrorCode = ErrorCode(0);
+    pub const UNKNOWN_ERROR: ErrorCode = ErrorCode(1);
+    pub const FILE_PATH_NOT_FOUND: ErrorCode = ErrorCode(11);
+}
+
+impl RestResponse<()> {
     pub fn succeed() -> Self {
         RestResponse {
             success: true,
-            code: 0,
+            code: ErrorCode::SUCCESS.0,
             message: None,
             data: None,
         }
     }
 
-    pub fn succeed_with_data(data: Option<T>) -> Self {
-        RestResponse {
-            success: true,
-            code: 0,
-            message: None,
-            data,
-        }
-    }
-
-    pub fn failed(code: i32, message: String) -> Self {
+    pub fn failed(error_code: ErrorCode, message: String) -> Self {
         RestResponse {
             success: false,
-            code,
+            code: error_code.0,
             message: Some(message),
             data: None,
         }
     }
+}
 
-    pub fn failed_with_data(code: i32, message: Option<String>, data: Option<T>) -> Self {
+impl<T : ToSchema> RestResponse<T> {
+
+    pub fn succeed_with_data(data: Option<T>) -> Self {
+        RestResponse {
+            success: true,
+            code: ErrorCode::SUCCESS.0,
+            message: None,
+            data,
+        }
+    }
+
+    pub fn failed_with_data(error_code: ErrorCode, message: Option<String>, data: Option<T>) -> Self {
         RestResponse {
             success: false,
-            code,
+            code: error_code.0,
             message,
             data,
         }
     }
 }
-
-/*
-impl RestResponse<String> {
-    pub fn succeed() -> Self {
-        RestResponse {
-            succeed: true,
-            code: 0,
-            message: None,
-            data: None
-        }
-    }
-    pub fn failed(code: i32, message: Option<String>) -> Self {
-        RestResponse {
-            success: false,
-            code,
-            message,
-            data: None,
-        }
-    }
-}
-     */

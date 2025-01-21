@@ -7,9 +7,14 @@ use actix_server::Server;
 use actix_web::{error, middleware::Logger, web, App, HttpResponse, HttpServer};
 use log::{info, warn};
 
-use controller::scan::{start_scan, stop_scan};
+use controller::{list::list_files, scan::{start_scan, stop_scan}};
 use database::sqlite::PoolDatabaseManager;
 use utils::network::check_ipv6_available;
+use utoipa_actix_web::AppExt;
+use utoipa_rapidoc::RapiDoc;
+use utoipa_redoc::{Redoc, Servable as _};
+use utoipa_scalar::{Scalar, Servable as _};
+use utoipa_swagger_ui::SwaggerUi;
 
 pub fn run() ->  std::io::Result<Server> {
     // access logs are printed with the INFO level so ensure it is enabled by default
@@ -19,8 +24,8 @@ pub fn run() ->  std::io::Result<Server> {
     database_manager.0.create_tables().unwrap();
     //start the server
     let mut http_server = HttpServer::new(move || {
-        App::new()
-            .wrap(Logger::default())
+        App::new().into_utoipa_app().map(|app| app.wrap(Logger::default()))
+            //.wrap(Logger::default())
             .app_data(web::Data::new(database_manager.clone()))
             .app_data(
                 web::JsonConfig::default()
@@ -35,10 +40,18 @@ pub fn run() ->  std::io::Result<Server> {
                         .into();
                     }),
             ) // <- limit size of the payload (global configuration)
-            .service(web::resource("/api/scan/start").route(web::post().to(start_scan)))
-            .service(web::resource("/api/scan/stop").route(web::post().to(stop_scan)))
-        //.service(fs::Files::new("/", "./static").index_file("index.html"))
-    });
+            .service(start_scan)
+            .service(stop_scan)
+            .service(list_files)
+            .openapi_service(|api| {
+                SwaggerUi::new("/swagger-ui/{_:.*}").url("/api/openapi.json", api)
+            })
+            .openapi_service(|api| Redoc::with_url("/redoc", api))
+            .openapi_service(|api|RapiDoc::with_url("/rapidoc", "/api/openapi.json", api))
+            .openapi_service(|api| Scalar::with_url("/scalar", api))
+            .into_app()
+            //.service(actix_files ::Files::new("/", "./static").index_file("index.html"))
+        });
 
     if check_ipv6_available() {
         http_server = http_server.bind("[::]:8081")?;

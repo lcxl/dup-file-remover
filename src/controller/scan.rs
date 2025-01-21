@@ -4,16 +4,24 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::database::file_info::FileInfo;
 use crate::database::sqlite::PoolDatabaseManager;
-use crate::model::common::RestResponse;
+use crate::model::common::{ErrorCode, RestResponse};
 use crate::model::scan::ScanRequest;
-use actix_web::{web, Error as AWError, HttpResponse};
+use actix_web::{post, web, Error as AWError, HttpResponse};
 use chrono::Local;
 use log::{debug, error, info, warn};
-
 static STOP_SCAN_FLAG: AtomicBool = AtomicBool::new(false);
 static SCAN_FLAG: AtomicBool = AtomicBool::new(false);
 
 /// Start a new scan. If a scan is already in progress, return a conflict error.
+#[utoipa::path(
+    summary = "Start a new file scan",
+    request_body(content = ScanRequest),
+    responses(
+        (status = 200, description = "Scan started successfully", body = RestResponse<i64>),
+        (status  = 409, description = "Scan already in progress"),
+    ),
+)]
+#[post("/api/scan/start")]
 pub async fn start_scan(
     requst_json: web::Json<ScanRequest>,
     db: web::Data<PoolDatabaseManager>,
@@ -27,9 +35,7 @@ pub async fn start_scan(
     let scan_path = requst_json.scan_path.clone();
     let path = Path::new(&scan_path);
     if !path.exists() {
-        let failed_response: RestResponse<()> =
-            RestResponse::failed(11, format!("Scan path '{}' does not exist", &scan_path));
-        return Ok(HttpResponse::NotFound().json(failed_response));
+        return Ok(HttpResponse::NotFound().json(RestResponse::failed(ErrorCode::FILE_PATH_NOT_FOUND, format!("Scan path '{}' does not exist", &scan_path))));
     }
     STOP_SCAN_FLAG.store(false, Ordering::Relaxed);
     tokio::spawn(async move {
@@ -49,13 +55,14 @@ pub async fn start_scan(
         }
     });
 
-    let test_none_response: RestResponse<()> = RestResponse::succeed();
-    HttpResponse::Ok().json(test_none_response);
-
-    Ok(HttpResponse::Ok().json(RestResponse::succeed_with_data(None::<()>)))
+    Ok(HttpResponse::Ok().json(RestResponse::succeed()))
 }
 
 /// Stop the current file scan.
+#[utoipa::path(
+    summary = "Stop the current file scan",
+)]
+#[post("/api/scan/stop")]
 pub async fn stop_scan() -> Result<HttpResponse, AWError> {
     info!("Stopping scan");
     STOP_SCAN_FLAG.store(true, Ordering::Relaxed);

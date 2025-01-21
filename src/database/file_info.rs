@@ -2,10 +2,12 @@ use std::os::linux::fs::MetadataExt;
 
 use chrono::{DateTime, Local};
 use md5::{Digest, Md5};
+use serde::Serialize;
+use utoipa::ToSchema;
 
 use super::sqlite::FileInfoDO;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct InodeInfo {
     pub inode: u64,  // inode number
     pub dev_id: u64, // New field to store the device ID
@@ -34,7 +36,7 @@ impl PartialEq<InodeInfo> for InodeInfo {
             && self.size == other.size
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct FileInfo {
     pub inode_info: InodeInfo, // Renamed field to use the new struct
     pub dir_path: String,
@@ -47,7 +49,7 @@ pub struct FileInfo {
     pub scan_time: DateTime<Local>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct FileInfoWithMd5Count {
     pub file_info: FileInfo,
     pub md5_count: usize,

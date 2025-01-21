@@ -18,4 +18,9 @@ md-5 = "0.10"
 r2d2_sqlite = "0.25"
 r2d2 = "0.8"
 tokio = { version = "1.43", features = ["full"] }
-utoipa = { version = "5", features = ["macros", "actix_extras"] }
+utoipa = { version = "5", features = ["actix_extras", "chrono"] }
+utoipa-swagger-ui = { version = "9", features = ["actix-web"] }
+utoipa-actix-web = "0.1"
+utoipa-redoc = { version="6", features = ["actix-web"] }
+utoipa-rapidoc = { version="6", features = ["actix-web"] }
+utoipa-scalar = { version="0.3", features = ["actix-web"] }
