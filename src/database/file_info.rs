@@ -6,18 +6,22 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 use super::sqlite::FileInfoDO;
-
+/// Inode info
 #[derive(Debug, Serialize, ToSchema)]
 pub struct InodeInfo {
-    pub inode: u64,  // inode number
-    pub dev_id: u64, // New field to store the device ID
+    /// Inode number
+    pub inode: u64,
+    /// Device ID
+    pub dev_id: u64,
     pub permissions: u32,
     pub nlink: u64,
     pub uid: u32,
     pub gid: u32,
     pub created: DateTime<Local>,
     pub modified: DateTime<Local>,
+    /// File md5
     pub md5: Option<String>,
+    /// File size
     pub size: u64,
 }
 /// Implement PartialEq for InodeInfo to compare two instances based on their fields.
@@ -38,14 +42,19 @@ impl PartialEq<InodeInfo> for InodeInfo {
 }
 #[derive(Debug, Serialize, ToSchema)]
 pub struct FileInfo {
-    pub inode_info: InodeInfo, // Renamed field to use the new struct
+    /// Inode info
+    pub inode_info: InodeInfo,
+    /// Dir path of the directory containing the file
     pub dir_path: String,
+    /// File path
     pub file_path: String,
+    /// File name
     pub file_name: String,
+    /// File extension
     pub file_extension: Option<String>,
-    // version is the version of the file, used to track changes
+    /// version is the version of the file, used to track changes
     pub version: u64,
-    // scan_time is the time when the file was last scanned
+    /// scan_time is the time when the file was last scanned
     pub scan_time: DateTime<Local>,
 }
 
