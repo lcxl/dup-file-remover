@@ -7,7 +7,10 @@ use actix_server::Server;
 use actix_web::{error, middleware::Logger, web, App, HttpResponse, HttpServer};
 use log::{info, warn};
 
-use controller::{list::list_files, scan::{start_scan, stop_scan}};
+use controller::{
+    list::list_files,
+    scan::{start_scan, stop_scan},
+};
 use database::sqlite::PoolDatabaseManager;
 use utils::network::check_ipv6_available;
 use utoipa_actix_web::AppExt;
@@ -16,7 +19,7 @@ use utoipa_redoc::{Redoc, Servable as _};
 use utoipa_scalar::{Scalar, Servable as _};
 use utoipa_swagger_ui::SwaggerUi;
 
-pub fn run() ->  std::io::Result<Server> {
+pub fn run() -> std::io::Result<Server> {
     // access logs are printed with the INFO level so ensure it is enabled by default
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
@@ -24,7 +27,9 @@ pub fn run() ->  std::io::Result<Server> {
     database_manager.0.create_tables().unwrap();
     //start the server
     let mut http_server = HttpServer::new(move || {
-        App::new().into_utoipa_app().map(|app| app.wrap(Logger::default()))
+        App::new()
+            .into_utoipa_app()
+            .map(|app| app.wrap(Logger::default()))
             //.wrap(Logger::default())
             .app_data(web::Data::new(database_manager.clone()))
             .app_data(
@@ -47,11 +52,11 @@ pub fn run() ->  std::io::Result<Server> {
                 SwaggerUi::new("/swagger-ui/{_:.*}").url("/api/openapi.json", api)
             })
             .openapi_service(|api| Redoc::with_url("/redoc", api))
-            .openapi_service(|api|RapiDoc::with_url("/rapidoc", "/api/openapi.json", api))
+            .openapi_service(|api| RapiDoc::with_url("/rapidoc", "/api/openapi.json", api))
             .openapi_service(|api| Scalar::with_url("/scalar", api))
             .into_app()
-            //.service(actix_files ::Files::new("/", "./static").index_file("index.html"))
-        });
+        //.service(actix_files ::Files::new("/", "./static").index_file("index.html"))
+    });
 
     if check_ipv6_available() {
         http_server = http_server.bind("[::]:8081")?;
@@ -60,7 +65,6 @@ pub fn run() ->  std::io::Result<Server> {
         http_server = http_server.bind(("0.0.0.0", 8081))?;
         info!("Server started at http://0.0.0.0:8081");
     }
-    
 
     Ok(http_server.run())
 }
