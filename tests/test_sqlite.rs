@@ -17,7 +17,7 @@ fn test_create_sqlite() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_list_files() -> Result<(), Box<dyn std::error::Error>> {
     let database_manager = PoolDatabaseManager::new("dfremover.db")?;
-    let result = database_manager.0.list_files(1, 100, 100, 1000);
+    let result = database_manager.0.list_files(1, 100, Some(100), Some(1000));
     assert!(result.is_ok());
     let files = result.unwrap();
     for (index, file) in files.iter().enumerate() {

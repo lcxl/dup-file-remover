@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Local};
 use log::{error, info};
-use rusqlite::{Connection, Params, Result};
+use rusqlite::{params_from_iter, Connection, Params, Result, ToSql};
 
 use super::file_info::{FileInfo, FileInfoWithMd5Count, InodeInfo};
 use r2d2_sqlite::SqliteConnectionManager;
@@ -113,7 +113,8 @@ impl DatabaseManager {
 
     pub fn update_version(&self, file_info: &FileInfo) -> Result<usize> {
         let conn = self.pool.get().unwrap();
-        let mut statement = conn.prepare("UPDATE file_info SET version = ? WHERE dir_path = ? and file_name = ?")?;
+        let mut statement =
+            conn.prepare("UPDATE file_info SET version = ? WHERE dir_path = ? and file_name = ?")?;
         statement.execute((file_info.version, &file_info.dir_path, &file_info.file_name))
     }
 
@@ -285,14 +286,17 @@ impl DatabaseManager {
                 size: row.get(9)?,
             };
 
-            Ok(FileInfo::from_do(inode_info, FileInfoDO {
-                inode_info_id:0,
-                dir_path: row.get(10)?,
-                file_name: row.get(11)?,
-                file_extension: row.get(12)?,
-                scan_time: row.get(13)?,
-                version: row.get(14)?,
-            }))
+            Ok(FileInfo::from_do(
+                inode_info,
+                FileInfoDO {
+                    inode_info_id: 0,
+                    dir_path: row.get(10)?,
+                    file_name: row.get(11)?,
+                    file_extension: row.get(12)?,
+                    scan_time: row.get(13)?,
+                    version: row.get(14)?,
+                },
+            ))
         });
         let mut files = Vec::new();
         for item in inode_iter? {
@@ -304,7 +308,7 @@ impl DatabaseManager {
     pub fn remove_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<()> {
         let mut conn = self.pool.get().unwrap();
         let tx = conn.transaction()?;
-      
+
         let sql = "DELETE FROM file_info WHERE dir_path = ? and file_name = ?";
         tx.execute(sql, (dir_path, file_name))?;
         tx.commit()?;
@@ -319,17 +323,21 @@ impl DatabaseManager {
         let update_rows = tx.execute(sql, (dir_path, version))?;
         tx.commit()?;
         if update_rows > 0 {
-            info!("deleted {} rows in file_info by dir_path '{}' and version '{}'", update_rows, dir_path, version);
+            info!(
+                "deleted {} rows in file_info by dir_path '{}' and version '{}'",
+                update_rows, dir_path, version
+            );
         }
         Ok(())
     }
 
     /// remove not existed inodes from database
-    pub fn remove_deleted_inode(&self)->Result<()> {
+    pub fn remove_deleted_inode(&self) -> Result<()> {
         let mut conn = self.pool.get().unwrap();
         let tx = conn.transaction()?;
 
-        let sql = "DELETE FROM inode_info WHERE id not in (select DISTINCT inode_info_id from file_info)";
+        let sql =
+            "DELETE FROM inode_info WHERE id not in (select DISTINCT inode_info_id from file_info)";
         let update_rows = tx.execute(sql, ())?;
         tx.commit()?;
         if update_rows > 0 {
@@ -342,56 +350,66 @@ impl DatabaseManager {
         &self,
         page_no: i64,
         page_count: i64,
-        min_file_size: i64,
-        max_file_size: i64,
+        min_file_size: Option<i64>,
+        max_file_size: Option<i64>,
     ) -> Result<Vec<FileInfoWithMd5Count>> {
         let conn = self.pool.get().unwrap();
-        let sql = "SELECT a1.inode, a1.dev_id, a1.permissions, a1.nlink, a1.uid, a1.gid, a1.created, a1.modified, a1.md5, a1.size,
-        a2.dir_path, a2.file_name, a2.file_extension, a2.scan_time, a2.version, a3.md5_count
-from inode_info as a1, 
-file_info as a2, 
-(SELECT  md5, count(md5) as md5_count
-            FROM inode_info
-            WHERE size >= ? and size < ?
-            group by md5) as a3
-            where a1.id = a2.inode_info_id and a1.md5 = a3.md5 
+        let mut params: Vec<Box<dyn ToSql>> = Vec::new();
+        let mut sub_query_sql = String::from(
+            "SELECT md5, count(md5) as md5_count
+            FROM inode_info where 1=1 ",
+        );
+        if min_file_size.is_some() && max_file_size.is_some() {
+            params.push(Box::new(min_file_size.unwrap()));
+            params.push(Box::new(max_file_size.unwrap()));
+            sub_query_sql += "and size >= ? and size < ? ";
+        }
+        sub_query_sql += " group by md5";
+
+        let sql = format!(
+            "SELECT a1.inode, a1.dev_id, a1.permissions, a1.nlink, a1.uid, a1.gid, a1.created, a1.modified, a1.md5, a1.size,
+            a2.dir_path, a2.file_name, a2.file_extension, a2.scan_time, a2.version, a3.md5_count
+            from inode_info as a1, 
+            file_info as a2, 
+            ({}) as a3
+            where 
+                a1.id = a2.inode_info_id 
+                and a1.md5 = a3.md5 
             order by a3.md5_count desc, a1.size desc
- LIMIT ? OFFSET ?;";
-        let mut stmt = conn.prepare(sql)?;
-        let file_iter = stmt.query_map(
-            [
-                min_file_size,
-                max_file_size,
-                page_count,
-                (page_no - 1) * page_count,
-            ],
-            |row| {
-                let inode_info = InodeInfo {
-                    inode: row.get(0)?,
-                    dev_id: row.get(1)?,
-                    permissions: row.get(2)?,
-                    nlink: row.get(3)?,
-                    uid: row.get(4)?,
-                    gid: row.get(5)?,
-                    created: row.get(6)?,
-                    modified: row.get(7)?,
-                    md5: row.get(8)?,
-                    size: row.get(9)?,
-                };
-                let file_info = FileInfo::from_do(inode_info, FileInfoDO{
-                    inode_info_id:0,
+            LIMIT ? OFFSET ?;", sub_query_sql);
+        params.push(Box::new(page_count));
+        params.push(Box::new((page_no - 1) * page_count));
+
+        let mut stmt = conn.prepare(&sql)?;
+        let file_iter = stmt.query_map(params_from_iter(params.iter()), |row| {
+            let inode_info = InodeInfo {
+                inode: row.get(0)?,
+                dev_id: row.get(1)?,
+                permissions: row.get(2)?,
+                nlink: row.get(3)?,
+                uid: row.get(4)?,
+                gid: row.get(5)?,
+                created: row.get(6)?,
+                modified: row.get(7)?,
+                md5: row.get(8)?,
+                size: row.get(9)?,
+            };
+            let file_info = FileInfo::from_do(
+                inode_info,
+                FileInfoDO {
+                    inode_info_id: 0,
                     dir_path: row.get(10)?,
                     file_name: row.get(11)?,
                     file_extension: row.get(12)?,
                     scan_time: row.get(13)?,
                     version: row.get(14)?,
-                });
-                Ok(FileInfoWithMd5Count {
-                    file_info,
-                    md5_count: row.get(15)?,
-                })
-            },
-        );
+                },
+            );
+            Ok(FileInfoWithMd5Count {
+                file_info,
+                md5_count: row.get(15)?,
+            })
+        });
         let mut files = Vec::new();
         for item in file_iter? {
             files.push(item?);
