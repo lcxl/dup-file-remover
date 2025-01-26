@@ -4,6 +4,8 @@ use chrono::{DateTime, Local};
 use log::{error, info};
 use rusqlite::{params_from_iter, Connection, Params, Result, ToSql};
 
+use crate::model::list::QueryListParams;
+
 use super::file_info::{FileInfo, FileInfoWithMd5Count, InodeInfo};
 use r2d2_sqlite::SqliteConnectionManager;
 pub type Pool = r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>;
@@ -348,10 +350,7 @@ impl DatabaseManager {
 
     pub fn list_files(
         &self,
-        page_no: i64,
-        page_count: i64,
-        min_file_size: Option<i64>,
-        max_file_size: Option<i64>,
+        query_list_params: &QueryListParams,
     ) -> Result<Vec<FileInfoWithMd5Count>> {
         let conn = self.pool.get().unwrap();
         let mut params: Vec<Box<dyn ToSql>> = Vec::new();
@@ -359,14 +358,14 @@ impl DatabaseManager {
             "SELECT md5, count(md5) as md5_count
             FROM inode_info where 1=1 ",
         );
-        if min_file_size.is_some() && max_file_size.is_some() {
-            params.push(Box::new(min_file_size.unwrap()));
-            params.push(Box::new(max_file_size.unwrap()));
+        if query_list_params.min_file_size.is_some() && query_list_params.max_file_size.is_some() {
+            params.push(Box::new(query_list_params.min_file_size.unwrap()));
+            params.push(Box::new(query_list_params.max_file_size.unwrap()));
             sub_query_sql += "and size >= ? and size < ? ";
         }
         sub_query_sql += " group by md5";
 
-        let sql = format!(
+        let mut sql = format!(
             "SELECT a1.inode, a1.dev_id, a1.permissions, a1.nlink, a1.uid, a1.gid, a1.created, a1.modified, a1.md5, a1.size,
             a2.dir_path, a2.file_name, a2.file_extension, a2.scan_time, a2.version, a3.md5_count
             from inode_info as a1, 
@@ -374,11 +373,34 @@ impl DatabaseManager {
             ({}) as a3
             where 
                 a1.id = a2.inode_info_id 
-                and a1.md5 = a3.md5 
-            order by a3.md5_count desc, a1.size desc
-            LIMIT ? OFFSET ?;", sub_query_sql);
-        params.push(Box::new(page_count));
-        params.push(Box::new((page_no - 1) * page_count));
+                and a1.md5 = a3.md5 ", sub_query_sql);
+        if query_list_params.dir_path.is_some() {
+            sql += "and a2.dir_path like ? ";
+            params.push(Box::new(format!(
+                "%{}%",
+                query_list_params.dir_path.clone().unwrap()
+            )));
+        }
+        if query_list_params.file_name.is_some() {
+            sql += "and a2.file_name like ? ";
+            params.push(Box::new(format!(
+                "%{}%",
+                query_list_params.file_name.clone().unwrap()
+            )));
+        }
+        if query_list_params.file_extension.is_some() {
+            sql += "and a2.file_extension like ? ";
+            params.push(Box::new(format!(
+                "%{}%",
+                query_list_params.file_extension.clone().unwrap()
+            )));
+        }
+        sql += " order by a3.md5_count desc, a1.size desc
+            LIMIT ? OFFSET ?;";
+        params.push(Box::new(query_list_params.page_count));
+        params.push(Box::new(
+            (query_list_params.page_no - 1) * query_list_params.page_count,
+        ));
 
         let mut stmt = conn.prepare(&sql)?;
         let file_iter = stmt.query_map(params_from_iter(params.iter()), |row| {

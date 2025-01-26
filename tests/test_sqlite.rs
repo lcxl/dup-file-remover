@@ -1,5 +1,8 @@
 use chrono::Local;
-use dup_file_remover::database::{file_info::FileInfo, sqlite::PoolDatabaseManager};
+use dup_file_remover::{
+    database::{file_info::FileInfo, sqlite::PoolDatabaseManager},
+    model::list::QueryListParams,
+};
 
 #[test]
 fn test_create_sqlite() -> Result<(), Box<dyn std::error::Error>> {
@@ -17,7 +20,16 @@ fn test_create_sqlite() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_list_files() -> Result<(), Box<dyn std::error::Error>> {
     let database_manager = PoolDatabaseManager::new("dfremover.db")?;
-    let result = database_manager.0.list_files(1, 100, Some(100), Some(1000));
+    let query_list_params = QueryListParams {
+        page_no: 1,
+        page_count: 100,
+        min_file_size: Some(100),
+        max_file_size: Some(1000),
+        dir_path: None,
+        file_name: None,
+        file_extension: None,
+    };
+    let result = database_manager.0.list_files(&query_list_params);
     assert!(result.is_ok());
     let files = result.unwrap();
     for (index, file) in files.iter().enumerate() {

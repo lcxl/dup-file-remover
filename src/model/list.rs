@@ -11,4 +11,10 @@ pub struct QueryListParams {
     pub min_file_size: Option<i64>,
     /// Max file size
     pub max_file_size: Option<i64>,
+    /// Dir path of the directory containing the file
+    pub dir_path: Option<String>,
+    /// File name filtering
+    pub file_name: Option<String>,
+    /// New field for file extension filtering
+    pub file_extension: Option<String>,
 }

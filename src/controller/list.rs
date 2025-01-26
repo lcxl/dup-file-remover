@@ -20,12 +20,7 @@ pub async fn list_files(
     db: web::Data<PoolDatabaseManager>,
 ) -> Result<HttpResponse, AWError> {
     let conn = db.get_ref();
-    let result = conn.0.list_files(
-        query_list.page_no,
-        query_list.page_count,
-        query_list.min_file_size,
-        query_list.max_file_size,
-    );
+    let result = conn.0.list_files(&query_list);
     if result.is_err() {
         return Ok(HttpResponse::Ok().json(RestResponse::failed(
             ErrorCode::UNKNOWN_ERROR,
