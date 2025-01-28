@@ -35,7 +35,10 @@ pub async fn start_scan(
     let scan_path = requst_json.scan_path.clone();
     let path = Path::new(&scan_path);
     if !path.exists() {
-        return Ok(HttpResponse::NotFound().json(RestResponse::failed(ErrorCode::FILE_PATH_NOT_FOUND, format!("Scan path '{}' does not exist", &scan_path))));
+        return Ok(HttpResponse::NotFound().json(RestResponse::failed(
+            ErrorCode::FILE_PATH_NOT_FOUND,
+            format!("Scan path '{}' does not exist", &scan_path),
+        )));
     }
     STOP_SCAN_FLAG.store(false, Ordering::Relaxed);
     tokio::spawn(async move {
@@ -59,9 +62,7 @@ pub async fn start_scan(
 }
 
 /// Stop the current file scan.
-#[utoipa::path(
-    summary = "Stop the current file scan",
-)]
+#[utoipa::path(summary = "Stop the current file scan")]
 #[post("/api/scan/stop")]
 pub async fn stop_scan() -> Result<HttpResponse, AWError> {
     info!("Stopping scan");
@@ -78,7 +79,8 @@ pub async fn scan_all_files(
     let start = SystemTime::now();
     let scan_version = start
         .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards").as_secs();
+        .expect("Time went backwards")
+        .as_secs();
     _scan_all_files(path, scan_version, db).await
 }
 
