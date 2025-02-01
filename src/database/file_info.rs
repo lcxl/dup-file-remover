@@ -58,12 +58,6 @@ pub struct FileInfo {
     pub scan_time: DateTime<Local>,
 }
 
-#[derive(Debug, Serialize, ToSchema)]
-pub struct FileInfoWithMd5Count {
-    pub file_info: FileInfo,
-    pub md5_count: usize,
-}
-
 impl FileInfo {
     pub fn new(
         file_path: &str,
@@ -128,4 +122,22 @@ impl FileInfo {
             version: file_info_do.version,
         }
     }
+}
+
+/// File info with md5 count
+#[derive(Debug, Serialize, ToSchema)]
+pub struct FileInfoWithMd5Count {
+    // File info
+    pub file_info: FileInfo,
+    // Md5 count
+    pub md5_count: usize,
+}
+
+/// File info list with total count
+#[derive(Debug, Serialize, ToSchema)]
+pub struct FileInfoList {
+    /// file info list
+    pub file_info_list: Vec<FileInfoWithMd5Count>,
+    /// total file count
+    pub total_count: u64,
 }

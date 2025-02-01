@@ -6,7 +6,7 @@ use rusqlite::{params_from_iter, Connection, Params, Result, ToSql};
 
 use crate::model::list::QueryListParams;
 
-use super::file_info::{FileInfo, FileInfoWithMd5Count, InodeInfo};
+use super::file_info::{FileInfo, FileInfoList, FileInfoWithMd5Count, InodeInfo};
 use r2d2_sqlite::SqliteConnectionManager;
 pub type Pool = r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>;
 
@@ -348,61 +348,70 @@ impl DatabaseManager {
         Ok(())
     }
 
-    pub fn list_files(
-        &self,
-        query_list_params: &QueryListParams,
-    ) -> Result<Vec<FileInfoWithMd5Count>> {
-        let conn = self.pool.get().unwrap();
-        let mut params: Vec<Box<dyn ToSql>> = Vec::new();
+    pub fn list_files(&self, query_list_params: &QueryListParams) -> Result<FileInfoList> {
+        let mut conn = self.pool.get().unwrap();
+        let mut params: Vec<Arc<dyn ToSql>> = Vec::new();
         let mut sub_query_sql = String::from(
             "SELECT md5, count(md5) as md5_count
             FROM inode_info where 1=1 ",
         );
         if query_list_params.min_file_size.is_some() && query_list_params.max_file_size.is_some() {
-            params.push(Box::new(query_list_params.min_file_size.unwrap()));
-            params.push(Box::new(query_list_params.max_file_size.unwrap()));
+            params.push(Arc::new(query_list_params.min_file_size.unwrap()));
+            params.push(Arc::new(query_list_params.max_file_size.unwrap()));
             sub_query_sql += "and size >= ? and size < ? ";
         }
         sub_query_sql += " group by md5";
 
-        let mut sql = format!(
-            "SELECT a1.inode, a1.dev_id, a1.permissions, a1.nlink, a1.uid, a1.gid, a1.created, a1.modified, a1.md5, a1.size,
-            a2.dir_path, a2.file_name, a2.file_extension, a2.scan_time, a2.version, a3.md5_count
-            from inode_info as a1, 
-            file_info as a2, 
-            ({}) as a3
+        let mut query_sql = format!(
+            "from inode_info as a1, 
+                file_info as a2, 
+                ({}) as a3
             where 
                 a1.id = a2.inode_info_id 
-                and a1.md5 = a3.md5 ", sub_query_sql);
+                and a1.md5 = a3.md5 ",
+            sub_query_sql
+        );
         if query_list_params.dir_path.is_some() {
-            sql += "and a2.dir_path like ? ";
-            params.push(Box::new(format!(
+            query_sql += "and a2.dir_path like ? ";
+            params.push(Arc::new(format!(
                 "%{}%",
                 query_list_params.dir_path.clone().unwrap()
             )));
         }
         if query_list_params.file_name.is_some() {
-            sql += "and a2.file_name like ? ";
-            params.push(Box::new(format!(
+            query_sql += "and a2.file_name like ? ";
+            params.push(Arc::new(format!(
                 "%{}%",
                 query_list_params.file_name.clone().unwrap()
             )));
         }
         if query_list_params.file_extension.is_some() {
-            sql += "and a2.file_extension like ? ";
-            params.push(Box::new(format!(
+            query_sql += "and a2.file_extension like ? ";
+            params.push(Arc::new(format!(
                 "%{}%",
                 query_list_params.file_extension.clone().unwrap()
             )));
         }
-        sql += " order by a3.md5_count desc, a1.size desc
+        let sql = String::from("SELECT a1.inode, a1.dev_id, a1.permissions, a1.nlink, a1.uid, a1.gid, a1.created, a1.modified, a1.md5, a1.size,
+            a2.dir_path, a2.file_name, a2.file_extension, a2.scan_time, a2.version, a3.md5_count ") + &query_sql +" order by a3.md5_count desc, a1.size desc
             LIMIT ? OFFSET ?;";
-        params.push(Box::new(query_list_params.page_count));
-        params.push(Box::new(
+        let count_sql = String::from("SELECT COUNT(*) ") + &query_sql;
+        let count_params = params.to_vec();
+        params.push(Arc::new(query_list_params.page_count));
+        params.push(Arc::new(
             (query_list_params.page_no - 1) * query_list_params.page_count,
         ));
 
-        let mut stmt = conn.prepare(&sql)?;
+        let trans = conn.transaction()?;
+        let mut stmt = trans.prepare(&count_sql)?;
+        let count_iter = stmt.query_map(params_from_iter(count_params.iter()), |row| {
+            let count: u64 = row.get(0)?;
+            Ok(count)
+        });
+        // get total count
+        let total_count = count_iter?.next().unwrap().unwrap();
+
+        let mut stmt = trans.prepare(&sql)?;
         let file_iter = stmt.query_map(params_from_iter(params.iter()), |row| {
             let inode_info = InodeInfo {
                 inode: row.get(0)?,
@@ -436,6 +445,9 @@ impl DatabaseManager {
         for item in file_iter? {
             files.push(item?);
         }
-        Ok(files)
+        Ok(FileInfoList {
+            file_info_list: files,
+            total_count,
+        })
     }
 }

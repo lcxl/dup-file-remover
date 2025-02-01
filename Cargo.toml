@@ -12,7 +12,7 @@ serde_json = "1.0"
 futures = "0.3"
 env_logger = "0.11"
 log = "0.4"
-rusqlite = { version = "0.32", features = ["chrono", "bundled"] }
+rusqlite = { version = "0.33", features = ["chrono", "bundled"] }
 chrono = { version = "0.4", features = ["serde"] }
 md-5 = "0.10"
 r2d2_sqlite = "0.26"

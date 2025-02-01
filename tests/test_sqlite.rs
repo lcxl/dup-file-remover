@@ -32,12 +32,14 @@ fn test_list_files() -> Result<(), Box<dyn std::error::Error>> {
     let result = database_manager.0.list_files(&query_list_params);
     assert!(result.is_ok());
     let files = result.unwrap();
-    for (index, file) in files.iter().enumerate() {
+    println!("Total file count: {}", files.total_count);
+    for (index, file) in files.file_info_list.iter().enumerate() {
         println!(
             "Index: {}, md5 count: {}, file info: {:?}",
             index, file.md5_count, file.file_info
         );
     }
+    
     //database_manager.0.drop_tables()?;
     Ok(())
 }
