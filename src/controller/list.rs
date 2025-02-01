@@ -1,7 +1,7 @@
 use actix_web::{get, web, Error as AWError, HttpResponse};
 
 use crate::{
-    database::{file_info::FileInfoWithMd5Count, sqlite::PoolDatabaseManager},
+    database::{file_info::{FileInfoList, FileInfoWithMd5Count}, sqlite::PoolDatabaseManager},
     model::{
         common::{ErrorCode, RestResponse},
         list::QueryListParams,
@@ -11,7 +11,7 @@ use crate::{
     summary = "List files",
     params(QueryListParams),
     responses(
-        (status = 200, description = "The list of file info with md5 count", body=Vec<FileInfoWithMd5Count>)
+        (status = 200, description = "The list of file info with md5 count", body=FileInfoList)
     ),
 )]
 #[get("/api/list")]
