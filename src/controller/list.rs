@@ -1,7 +1,7 @@
 use actix_web::{get, web, Error as AWError, HttpResponse};
 
 use crate::{
-    database::{file_info::{FileInfoList, FileInfoWithMd5Count}, sqlite::PoolDatabaseManager},
+    database::{file_info::FileInfoList, sqlite::PoolDatabaseManager},
     model::{
         common::{ErrorCode, RestResponse},
         list::QueryListParams,
