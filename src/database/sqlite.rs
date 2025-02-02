@@ -355,10 +355,13 @@ impl DatabaseManager {
             "SELECT md5, count(md5) as md5_count
             FROM inode_info where 1=1 ",
         );
-        if query_list_params.min_file_size.is_some() && query_list_params.max_file_size.is_some() {
+        if query_list_params.min_file_size.is_some() {
             params.push(Arc::new(query_list_params.min_file_size.unwrap()));
+            sub_query_sql += "and size >= ? ";
+        }
+        if query_list_params.max_file_size.is_some() {
             params.push(Arc::new(query_list_params.max_file_size.unwrap()));
-            sub_query_sql += "and size >= ? and size < ? ";
+            sub_query_sql += "and size < ? ";
         }
         sub_query_sql += " group by md5";
 
