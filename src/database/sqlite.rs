@@ -405,8 +405,12 @@ impl DatabaseManager {
             (query_list_params.page_no - 1) * query_list_params.page_count,
         ));
 
+        info!("list file query sql: {}", sql);
+        info!("list file query count sql: {}", count_sql);
+        
         let trans = conn.transaction()?;
         let mut stmt = trans.prepare(&count_sql)?;
+        
         let count_iter = stmt.query_map(params_from_iter(count_params.iter()), |row| {
             let count: u64 = row.get(0)?;
             Ok(count)
