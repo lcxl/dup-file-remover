@@ -8,7 +8,7 @@ export async function listFiles(
   params: API.listFilesParams,
   options?: { [key: string]: any },
 ) {
-  return request<API.FileInfoWithMd5Count[]>('/api/list', {
+  return request<API.FileInfoList>('/api/list', {
     method: 'GET',
     params: {
       ...params,

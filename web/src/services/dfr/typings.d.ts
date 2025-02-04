@@ -16,6 +16,13 @@ declare namespace API {
     version: number;
   };
 
+  type FileInfoList = {
+    /** file info list */
+    file_info_list: FileInfoWithMd5Count[];
+    /** total file count */
+    total_count: number;
+  };
+
   type FileInfoWithMd5Count = {
     file_info: FileInfo;
     md5_count: number;
@@ -53,6 +60,8 @@ declare namespace API {
     file_name?: any;
     /** New field for file extension filtering */
     file_extension?: any;
+    /** MD5 hash of the file content, used for filtering files by their content. */
+    md5?: any;
   };
 
   type RestResponseI64 = {

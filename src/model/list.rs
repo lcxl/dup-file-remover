@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use utoipa::IntoParams;
-
+/// Query parameters for listing files.
 #[derive(Deserialize, IntoParams)]
 pub struct QueryListParams {
     /// Page number, start from 1
@@ -17,4 +17,6 @@ pub struct QueryListParams {
     pub file_name: Option<String>,
     /// New field for file extension filtering
     pub file_extension: Option<String>,
+    /// MD5 hash of the file content, used for filtering files by their content.
+    pub md5: Option<String>,
 }

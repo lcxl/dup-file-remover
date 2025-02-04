@@ -395,6 +395,10 @@ impl DatabaseManager {
                 query_list_params.file_extension.clone().unwrap()
             )));
         }
+        if query_list_params.md5.is_some() {
+            query_sql += "and a1.md5 = ? ";
+            params.push(Arc::new(query_list_params.md5.clone().unwrap()));
+        }
         let sql = String::from("SELECT a1.inode, a1.dev_id, a1.permissions, a1.nlink, a1.uid, a1.gid, a1.created, a1.modified, a1.md5, a1.size,
             a2.dir_path, a2.file_name, a2.file_extension, a2.scan_time, a2.version, a3.md5_count ") + &query_sql +" order by a3.md5_count desc, a1.size desc
             LIMIT ? OFFSET ?;";
@@ -407,10 +411,10 @@ impl DatabaseManager {
 
         info!("list file query sql: {}", sql);
         info!("list file query count sql: {}", count_sql);
-        
+
         let trans = conn.transaction()?;
         let mut stmt = trans.prepare(&count_sql)?;
-        
+
         let count_iter = stmt.query_map(params_from_iter(count_params.iter()), |row| {
             let count: u64 = row.get(0)?;
             Ok(count)
