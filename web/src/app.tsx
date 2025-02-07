@@ -20,6 +20,9 @@ export async function getInitialState(): Promise<{
   loading?: boolean;
   fetchUserInfo?: () => Promise<API.CurrentUser | undefined>;
 }> {
+  return {
+    settings: defaultSettings as Partial<LayoutSettings>,
+  };
   const fetchUserInfo = async () => {
     try {
       const msg = await queryCurrentUser({
@@ -63,6 +66,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
     },
     footerRender: () => <Footer />,
     onPageChange: () => {
+      return;
       const { location } = history;
       // 如果没有登录，重定向到 login
       if (!initialState?.currentUser && location.pathname !== loginPath) {

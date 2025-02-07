@@ -52,6 +52,12 @@ export default [
     component: './TableList',
   },
   {
+    name: 'list.file-list',
+    icon: 'table',
+    path: '/filelist',
+    component: './FileList',
+  },
+  {
     path: '/',
     redirect: '/welcome',
   },

@@ -86,10 +86,10 @@ const TableList: React.FC = () => {
       title: (
         <FormattedMessage
           id="pages.searchTable.updateForm.ruleName.nameLabel"
-          defaultMessage="Rule name"
+          defaultMessage="文件名称"
         />
       ),
-      dataIndex: 'file_info.file_name',
+      dataIndex: ["file_info", "file_name"],
       tip: '文件名称',
       render: (dom, entity) => {
         return (
@@ -105,15 +105,15 @@ const TableList: React.FC = () => {
       },
     },
     {
-      title: <FormattedMessage id="pages.searchTable.titleDesc" defaultMessage="Description" />,
-      dataIndex: 'file_info.dir_path',
+      title: <FormattedMessage id="pages.searchTable.titleDesc" defaultMessage="所在目录" />,
+      dataIndex: ["file_info", "dir_path"],
       valueType: 'textarea',
     },
     {
       title: (
         <FormattedMessage
           id="pages.searchTable.titleCallNo"
-          defaultMessage="Number of service calls"
+          defaultMessage="重复项"
         />
       ),
       dataIndex: 'md5_count',
@@ -122,7 +122,7 @@ const TableList: React.FC = () => {
       renderText: (val: string) =>
         `${val}${intl.formatMessage({
           id: 'pages.searchTable.tenThousand',
-          defaultMessage: ' 万 ',
+          defaultMessage: ' 个 ',
         })}`,
     },
     {
@@ -238,7 +238,32 @@ const TableList: React.FC = () => {
             <PlusOutlined /> <FormattedMessage id="pages.searchTable.new" defaultMessage="New" />
           </Button>,
         ]}
-        request={listFiles}
+        request={async (
+          // 第一个参数 params 查询表单和 params 参数的结合
+          // 第一个参数中一定会有 pageSize 和  current ，这两个参数是 antd 的规范
+          params: API.listFilesParams & {
+            pageSize?: number;
+            current?: number;
+            keywords?: string;
+          },
+          sort,
+          filter,
+        ) => {
+          // 这里需要返回一个 Promise,在返回之前你可以进行数据转化
+          // 如果需要转化参数可以在这里进行修改
+          const msg = await listFiles({
+            page_no: params.current,
+            page_count: params.pageSize,
+          });
+          return {
+            data: msg.file_info_list,
+            // success 请返回 true，
+            // 不然 table 会停止解析数据，即使有数据
+            success: true,
+            // 不传会使用 data 的长度，如果是分页一定要传
+            total: msg.total_count,
+          };
+        }}
         columns={columns}
         rowSelection={{
           onChange: (_, selectedRows) => {

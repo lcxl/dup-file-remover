@@ -196,7 +196,7 @@ const TableList: React.FC = () => {
         />
       ),
       sorter: true,
-      dataIndex: 'updatedAt',
+      dataIndex: ['file_info', 'scan_time'],
       valueType: 'dateTime',
       renderFormItem: (item, { defaultRender, ...rest }, form) => {
         const status = form.getFieldValue('status');

@@ -3,6 +3,8 @@ pub mod database;
 pub mod model;
 pub mod utils;
 
+use std::env;
+
 use actix_server::Server;
 use actix_web::{error, middleware::Logger, web, App, HttpResponse, HttpServer};
 use log::{info, warn};
@@ -22,7 +24,13 @@ use utoipa_swagger_ui::SwaggerUi;
 pub fn run() -> std::io::Result<Server> {
     // access logs are printed with the INFO level so ensure it is enabled by default
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-
+    //
+    let mut file_path = env::current_exe()?;
+    info!("Server file path: {:?}", file_path);
+    file_path.pop();
+    file_path.push("static");
+    info!("Server static path: {:?}", file_path);
+    
     let database_manager = PoolDatabaseManager::new("dfremover.db").unwrap();
     database_manager.0.create_tables().unwrap();
     //start the server
@@ -55,7 +63,7 @@ pub fn run() -> std::io::Result<Server> {
             .openapi_service(|api| RapiDoc::with_url("/rapidoc", "/api/openapi.json", api))
             .openapi_service(|api| Scalar::with_url("/scalar", api))
             .into_app()
-        //.service(actix_files ::Files::new("/", "./static").index_file("index.html"))
+        .service(actix_files::Files::new("/", file_path.to_string_lossy().to_string().as_str()).index_file("index.html"))
     });
 
     if check_ipv6_available() {
