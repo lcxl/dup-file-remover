@@ -10,7 +10,7 @@ const { REACT_APP_ENV = 'dev' } = process.env;
 export default defineConfig({
   // base: "/static/",
   // publicPath: "/static/",
-  devtool: "source-map",
+  // devtool: "source-map",
   history: { type: 'hash' },
   /**
    * @name 开启 hash 模式
