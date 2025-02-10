@@ -1,5 +1,11 @@
 use serde::Deserialize;
 use utoipa::IntoParams;
+
+pub struct QueryTimeParams {
+    pub start_time: chrono::NaiveDateTime,
+    pub end_time: chrono::NaiveDateTime,
+}
+
 /// Query parameters for listing files.
 #[derive(Deserialize, IntoParams)]
 pub struct QueryListParams {
