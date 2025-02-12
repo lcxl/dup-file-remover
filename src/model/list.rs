@@ -1,9 +1,13 @@
+use chrono::{DateTime, Local};
 use serde::Deserialize;
-use utoipa::IntoParams;
-
+use utoipa::{IntoParams, ToSchema};
+/// Query time params for list files
+#[derive(Deserialize, ToSchema, Clone)]
 pub struct QueryTimeParams {
-    pub start_time: chrono::NaiveDateTime,
-    pub end_time: chrono::NaiveDateTime,
+    /// Start time of the query range, use local time zone.
+    pub start_time: DateTime<Local>,
+    /// End time of the query range, use local time zone.
+    pub end_time: DateTime<Local>,
 }
 
 /// Query parameters for listing files.
@@ -25,4 +29,9 @@ pub struct QueryListParams {
     pub file_extension: Option<String>,
     /// MD5 hash of the file content, used for filtering files by their content.
     pub md5: Option<String>,
+    /// Optional time range filter for file creation.
+    pub created: Option<QueryTimeParams>,
+    /// Optional time range filter for file modification.
+    pub modified: Option<QueryTimeParams>,
+
 }
