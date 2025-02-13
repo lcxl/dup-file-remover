@@ -67,7 +67,7 @@ pub async fn start_scan(
 pub async fn stop_scan() -> Result<HttpResponse, AWError> {
     info!("Stopping scan");
     STOP_SCAN_FLAG.store(true, Ordering::Relaxed);
-    Ok(HttpResponse::Ok().json(RestResponse::succeed_with_data(None::<()>)))
+    Ok(HttpResponse::Ok().json(RestResponse::succeed()))
 }
 
 /// Scan all files in a directory and its subdirectories.

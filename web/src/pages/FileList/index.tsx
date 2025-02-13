@@ -67,6 +67,7 @@ const TableList: React.FC = () => {
         />
       ),
       dataIndex: ["file_info", "file_name"],
+      // @ts-ignore
       tip: '文件名称',
       render: (dom, entity) => {
         return (
@@ -230,8 +231,8 @@ const TableList: React.FC = () => {
           // 这里需要返回一个 Promise,在返回之前你可以进行数据转化
           // 如果需要转化参数可以在这里进行修改
           const msg = await listFiles({
-            page_no: params.current,
-            page_count: params.pageSize,
+            page_no: params.current!,
+            page_count: params.pageSize!,
           });
           return {
             data: msg.file_info_list,
