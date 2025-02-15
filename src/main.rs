@@ -10,7 +10,10 @@ async fn main() -> std::io::Result<()> {
         }
         Err(e) => {
             error!("Failed to start server: {:?}", e);
-            return Err(e); // Return the error instead of unwrapping it
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("{:?}", e),
+            ));
         }
     }
 }

@@ -24,3 +24,6 @@ utoipa-actix-web = "0.1"
 utoipa-redoc = { version="6", features = ["actix-web"] }
 utoipa-rapidoc = { version="6", features = ["actix-web"] }
 utoipa-scalar = { version="0.3", features = ["actix-web"] }
+config = { version="0.15", features = ["toml"]}
+clap = {version = "4.5", features = ["derive"]}
+actix-session = { version = "0.10", features = ["cookie-session"] }
