@@ -1,4 +1,31 @@
 declare namespace API {
+  type CurrentUser = {
+    access?: any;
+    address?: any;
+    avatar?: any;
+    country?: any;
+    email?: any;
+    geographic?: null | Geographic;
+    group?: any;
+    name?: any;
+    notify_count?: number;
+    phone?: any;
+    signature?: any;
+    tags?: any;
+    title?: any;
+    unread_count?: number;
+    userid?: any;
+  };
+
+  type FakeCaptcha = {
+    code?: number;
+    status?: any;
+  };
+
+  type FakeCaptchaParams = {
+    phone?: any;
+  };
+
   type FileInfo = {
     /** Dir path of the directory containing the file */
     dir_path: string;
@@ -28,6 +55,11 @@ declare namespace API {
     md5_count: number;
   };
 
+  type Geographic = {
+    city?: null | LabelKey;
+    province?: null | LabelKey;
+  };
+
   type InodeInfo = {
     created: string;
     /** Device ID */
@@ -43,6 +75,11 @@ declare namespace API {
     /** File size */
     size: number;
     uid: number;
+  };
+
+  type LabelKey = {
+    key?: any;
+    label?: any;
   };
 
   type listFilesParams = {
@@ -62,6 +99,44 @@ declare namespace API {
     file_extension?: any;
     /** MD5 hash of the file content, used for filtering files by their content. */
     md5?: any;
+    /** Optional time range filter for file creation. */
+    created?: null | QueryTimeParams;
+    /** Optional time range filter for file modification. */
+    modified?: null | QueryTimeParams;
+  };
+
+  type LoginParams = {
+    autoLogin: boolean;
+    password: string;
+    type: string;
+    username: string;
+  };
+
+  type LoginResult = {
+    currentAuthority: string;
+    status: string;
+    type: string;
+  };
+
+  type NoticeIconItem = {
+    avatar?: any;
+    datetime?: any;
+    description?: any;
+    extra?: any;
+    id?: any;
+    key?: any;
+    read?: any;
+    status?: any;
+    title?: any;
+    type?: null | NoticeIconItemType;
+  };
+
+  type NoticeIconItemType = 'notification' | 'message' | 'event';
+
+  type NoticeIconList = {
+    data?: any;
+    success: boolean;
+    total: number;
   };
 
   type RestResponseI64 = {
