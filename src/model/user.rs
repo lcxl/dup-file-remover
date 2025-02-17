@@ -24,8 +24,10 @@ pub struct CurrentUser {
     pub group: Option<String>,
     pub tags: Option<Vec<LabelKey>>,
     #[serde(rename(serialize = "notifyCount"))]
+    #[schema(rename = "notifyCount")]
     pub notify_count: Option<u32>,
     #[serde(rename(serialize = "unreadCount"))]
+    #[schema(rename = "unreadCount")]
     pub unread_count: Option<u32>,
     pub country: Option<String>,
     pub access: Option<String>,
@@ -35,15 +37,22 @@ pub struct CurrentUser {
 }
 
 #[derive(Serialize, Debug, ToSchema)]
+pub struct NoLogintUser {
+    #[serde(rename(serialize = "isLogin"))]
+    #[schema(rename = "isLogin")]
+    pub login: bool,
+}
+
+#[derive(Serialize, Debug, ToSchema)]
 pub enum NoticeIconItemType {
     #[serde(rename(serialize = "notification"))]
-    #[schema(rename="notification")]
+    #[schema(rename = "notification")]
     Notification,
     #[serde(rename(serialize = "message"))]
-    #[schema(rename="message")]
+    #[schema(rename = "message")]
     Message,
     #[serde(rename(serialize = "event"))]
-    #[schema(rename="event")]
+    #[schema(rename = "event")]
     Event,
 }
 
@@ -59,7 +68,7 @@ pub struct NoticeIconItem {
     pub datetime: Option<String>,
     pub description: Option<String>,
     #[serde(rename(serialize = "type"))]
-    #[schema(rename="type")]
+    #[schema(rename = "type")]
     pub notice_type: Option<NoticeIconItemType>,
 }
 
@@ -67,5 +76,17 @@ pub struct NoticeIconItem {
 pub struct NoticeIconList {
     pub data: Option<Vec<NoticeIconItem>>,
     pub total: u32,
+    pub success: bool,
+}
+
+#[derive(Serialize, Debug, ToSchema)]
+pub struct UserRespone<T> {
+    pub data: T,
+    #[serde(rename(serialize = "errorCode"))]
+    #[schema(rename = "errorCode")]
+    pub error_code: i32,
+    #[serde(rename(serialize = "errorMessage"))]
+    #[schema(rename = "errorMessage")]
+    pub error_message: String,
     pub success: bool,
 }

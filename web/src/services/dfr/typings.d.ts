@@ -8,12 +8,12 @@ declare namespace API {
     geographic?: null | Geographic;
     group?: any;
     name?: any;
-    notify_count?: number;
+    notifyCount?: number;
     phone?: any;
     signature?: any;
     tags?: any;
     title?: any;
-    unread_count?: number;
+    unreadCount?: number;
     userid?: any;
   };
 
@@ -118,6 +118,10 @@ declare namespace API {
     type: string;
   };
 
+  type NoLogintUser = {
+    isLogin: boolean;
+  };
+
   type NoticeIconItem = {
     avatar?: any;
     datetime?: any;
@@ -149,5 +153,35 @@ declare namespace API {
   type ScanRequest = {
     /** Scan path */
     scan_path: string;
+  };
+
+  type UserResponeCurrentUser = {
+    data: {
+      access?: any;
+      address?: any;
+      avatar?: any;
+      country?: any;
+      email?: any;
+      geographic?: null | Geographic;
+      group?: any;
+      name?: any;
+      notifyCount?: number;
+      phone?: any;
+      signature?: any;
+      tags?: any;
+      title?: any;
+      unreadCount?: number;
+      userid?: any;
+    };
+    errorCode: number;
+    errorMessage: string;
+    success: boolean;
+  };
+
+  type UserResponeNoLogintUser = {
+    data: { isLogin: boolean };
+    errorCode: number;
+    errorMessage: string;
+    success: boolean;
   };
 }

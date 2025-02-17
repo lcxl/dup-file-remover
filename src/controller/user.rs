@@ -2,15 +2,15 @@ use actix_session::Session;
 use actix_web::{get, Error as AWError, HttpResponse};
 use log::{info, warn};
 
-use crate::model::user::{CurrentUser, NoticeIconList};
+use crate::model::user::{CurrentUser, NoLogintUser, NoticeIconList, UserRespone};
 
 pub const SESSION_KEY_USERNAME: &str = "username";
 pub const USER_ADMIN: &str = "admin";
 #[utoipa::path(
     summary = "Get current user",
     responses(
-        (status = 200, description = "Current user info", body = CurrentUser),
-        (status  = 401, description = "Unauthorized"),
+        (status = 200, description = "Current user info", body = UserRespone<CurrentUser>),
+        (status  = 401, description = "Unauthorized", body = UserRespone<NoLogintUser>),
     ),
 )]
 #[get("/api/currentUser")]
@@ -33,11 +33,25 @@ pub async fn get_current_user(session: Session) -> Result<HttpResponse, AWError>
             address: None,
             phone: None,
         };
-        info!("Current user: {:?}", current_user);
-        return Ok(HttpResponse::Ok().json(current_user));
+        let user_response = UserRespone::<CurrentUser> {
+            data: current_user,
+            error_code: 0,
+            error_message: String::from(""),
+            success: true,
+        };
+
+        info!("Current user: {:?}", user_response.data);
+        return Ok(HttpResponse::Ok().json(user_response));
     }
     warn!("User is not logged in.");
-    return Ok(HttpResponse::Unauthorized().body("User is not logged in."));
+    let no_login_user = NoLogintUser { login: false };
+    let user_response = UserRespone::<NoLogintUser> {
+        data: no_login_user,
+        error_code: 401,
+        error_message: String::from("User is not logged in."),
+        success: true,
+    };
+    return Ok(HttpResponse::Unauthorized().json(user_response));
 }
 
 #[utoipa::path(

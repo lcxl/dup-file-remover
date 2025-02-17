@@ -139,10 +139,11 @@ pub fn run() -> Result<Server, Box<dyn std::error::Error>> {
             .openapi_service(|api| RapiDoc::with_url("/rapidoc", "/api/openapi.json", api))
             .openapi_service(|api| Scalar::with_url("/scalar", api))
             .into_app()
-            .wrap(SessionMiddleware::new(
-                CookieSessionStore::default(),
-                secret_key.clone(),
-            ))
+            .wrap(
+                SessionMiddleware::builder(CookieSessionStore::default(), secret_key.clone())
+                    .cookie_secure(false)
+                    .build(),
+            )
             .service(
                 actix_files::Files::new("/", file_path.to_string_lossy().to_string().as_str())
                     .index_file("index.html"),

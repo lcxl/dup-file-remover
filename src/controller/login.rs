@@ -32,9 +32,9 @@ pub async fn login_account(
         return Ok(HttpResponse::Forbidden().body("Illegal username or password"));
     }
     let result = LoginResult {
-        status: String::from("success"),
+        status: String::from("ok"),
         login_type: params.login_type,
-        current_authority: String::from("success"),
+        current_authority: String::from("admin"),
     };
     session
         .insert(SESSION_KEY_USERNAME, &params.username)

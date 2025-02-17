@@ -6,7 +6,7 @@ import type { RunTimeLayoutConfig } from '@umijs/max';
 import { history, Link } from '@umijs/max';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
-import { currentUser as queryCurrentUser } from '@/services/ant-design-pro/api';
+import { getCurrentUser } from '@/services/dfr/getCurrentUser';
 import React from 'react';
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
@@ -20,12 +20,14 @@ export async function getInitialState(): Promise<{
   loading?: boolean;
   fetchUserInfo?: () => Promise<API.CurrentUser | undefined>;
 }> {
+  /*
   return {
     settings: defaultSettings as Partial<LayoutSettings>,
   };
+  */
   const fetchUserInfo = async () => {
     try {
-      const msg = await queryCurrentUser({
+      const msg = await getCurrentUser({
         skipErrorHandler: true,
       });
       return msg.data;
@@ -66,7 +68,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
     },
     footerRender: () => <Footer />,
     onPageChange: () => {
-      return;
+      //return;
       const { location } = history;
       // 如果没有登录，重定向到 login
       if (!initialState?.currentUser && location.pathname !== loginPath) {

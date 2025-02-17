@@ -1,6 +1,6 @@
 import { Footer } from '@/components';
-import { login } from '@/services/ant-design-pro/login';
-import { getFakeCaptcha } from '@/services/ant-design-pro/login';
+import { loginAccount } from '@/services/dfr/loginAccount';
+import { getCaptcha } from '@/services/dfr/getCaptcha';
 import {
   AlipayCircleOutlined,
   LockOutlined,
@@ -117,7 +117,7 @@ const Login: React.FC = () => {
   const handleSubmit = async (values: API.LoginParams) => {
     try {
       // 登录
-      const msg = await login({ ...values, type });
+      const msg = await loginAccount({ ...values, type });
       if (msg.status === 'ok') {
         const defaultLoginSuccessMessage = intl.formatMessage({
           id: 'pages.login.success',
@@ -334,7 +334,7 @@ const Login: React.FC = () => {
                   },
                 ]}
                 onGetCaptcha={async (phone) => {
-                  const result = await getFakeCaptcha({
+                  const result = await getCaptcha({
                     phone,
                   });
                   if (!result) {
