@@ -64,4 +64,7 @@ export default {
   'pages.searchTable.tenThousand': '个',
   'pages.searchTable.batchDeletion': '批量删除',
   'pages.searchTable.batchApproval': '批量审批',
+  'pages.searchTable.fileModifiedTime': '文件修改时间',
+  'pages.searchTable.fileMd5': '文件MD5',
+  'pages.searchTable.fileExtention': '文件后缀名',
 };

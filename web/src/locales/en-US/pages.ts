@@ -67,4 +67,7 @@ export default {
   'pages.searchTable.tenThousand': '',
   'pages.searchTable.batchDeletion': 'batch deletion',
   'pages.searchTable.batchApproval': 'batch approval',
+  'pages.searchTable.fileModifiedTime': 'File modified time',
+  'pages.searchTable.fileMd5': 'File md5',
+  'pages.searchTable.fileExtention': 'File extension',
 };

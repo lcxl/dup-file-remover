@@ -83,6 +83,12 @@ const TableList: React.FC = () => {
       },
     },
     {
+      title: <FormattedMessage id="pages.searchTable.fileExtention" defaultMessage="文件后缀名" />,
+      dataIndex: ["file_info", "file_extension"],
+      hideInForm: true,
+      hideInTable: true,
+    },
+    {
       title: <FormattedMessage id="pages.searchTable.titleDesc" defaultMessage="所在目录" />,
       dataIndex: ["file_info", "dir_path"],
       valueType: 'textarea',
@@ -104,41 +110,10 @@ const TableList: React.FC = () => {
         })}`,
     },
     {
-      title: <FormattedMessage id="pages.searchTable.titleStatus" defaultMessage="Status" />,
-      dataIndex: 'status',
+      title: <FormattedMessage id="pages.searchTable.fileMd5" defaultMessage="File md5" />,
+      dataIndex: ['file_info', "inode_info", "md5"],
       hideInForm: true,
-      valueEnum: {
-        0: {
-          text: (
-            <FormattedMessage
-              id="pages.searchTable.nameStatus.default"
-              defaultMessage="Shut down"
-            />
-          ),
-          status: 'Default',
-        },
-        1: {
-          text: (
-            <FormattedMessage id="pages.searchTable.nameStatus.running" defaultMessage="Running" />
-          ),
-          status: 'Processing',
-        },
-        2: {
-          text: (
-            <FormattedMessage id="pages.searchTable.nameStatus.online" defaultMessage="Online" />
-          ),
-          status: 'Success',
-        },
-        3: {
-          text: (
-            <FormattedMessage
-              id="pages.searchTable.nameStatus.abnormal"
-              defaultMessage="Abnormal"
-            />
-          ),
-          status: 'Error',
-        },
-      },
+      valueType: 'text',
     },
     {
       title: (
@@ -148,26 +123,24 @@ const TableList: React.FC = () => {
         />
       ),
       sorter: true,
+      hideInSearch: true,
       dataIndex: ["file_info", "scan_time"],
       valueType: 'dateTime',
       renderFormItem: (item, { defaultRender, ...rest }, form) => {
-        const status = form.getFieldValue('status');
-        if (`${status}` === '0') {
-          return false;
-        }
-        if (`${status}` === '3') {
-          return (
-            <Input
-              {...rest}
-              placeholder={intl.formatMessage({
-                id: 'pages.searchTable.exception',
-                defaultMessage: 'Please enter the reason for the exception!',
-              })}
-            />
-          );
-        }
         return defaultRender(item);
       },
+    },
+    {
+      title: (
+        <FormattedMessage
+          id="pages.searchTable.fileModifiedTime"
+          defaultMessage="File modified time"
+        />
+      ),
+      sorter: true,
+      hideInSearch: true,
+      dataIndex: ["file_info", "inode_info", "modified"],
+      valueType: 'dateTime',
     },
     {
       title: <FormattedMessage id="pages.searchTable.titleOption" defaultMessage="Operating" />,
@@ -195,7 +168,7 @@ const TableList: React.FC = () => {
 
   return (
     <PageContainer>
-      <ProTable<API.FileInfoWithMd5Count, API.listFilesParams>
+      <ProTable<API.FileInfoWithMd5Count, API.FileInfoWithMd5Count>
         headerTitle={intl.formatMessage({
           id: 'pages.searchTable.title',
           defaultMessage: 'Enquiry form',
@@ -220,7 +193,7 @@ const TableList: React.FC = () => {
         request={async (
           // 第一个参数 params 查询表单和 params 参数的结合
           // 第一个参数中一定会有 pageSize 和  current ，这两个参数是 antd 的规范
-          params: API.listFilesParams & {
+          params: API.FileInfoWithMd5Count & {
             pageSize?: number;
             current?: number;
             keywords?: string;
@@ -230,10 +203,24 @@ const TableList: React.FC = () => {
         ) => {
           // 这里需要返回一个 Promise,在返回之前你可以进行数据转化
           // 如果需要转化参数可以在这里进行修改
-          const msg = await listFiles({
+          var list_param: API.listFilesParams = {
             page_no: params.current!,
             page_count: params.pageSize!,
-          });
+          };
+          if (params.file_info?.file_name) {
+            list_param.file_name = params.file_info.file_name;
+          }
+          if (params.file_info?.dir_path) {
+            list_param.dir_path = params.file_info.dir_path;
+          }
+          if (params.file_info?.inode_info?.md5) {
+            list_param.md5 = params.file_info.inode_info.md5;
+          }
+          if (params.file_info?.file_extension) {
+            list_param.file_extension = params.file_info.file_extension;
+          }
+
+          const msg = await listFiles(list_param);
           return {
             data: msg.file_info_list,
             // success 请返回 true，

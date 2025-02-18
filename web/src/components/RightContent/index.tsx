@@ -29,16 +29,3 @@ export const Question = () => {
     </div>
   );
 };
-
-
-export const GoogleSearchBar = () => {
-  return (
-    <div>
-      <Helmet>
-        <script async src="https://cse.google.com/cse.js?cx=e6cc04044874c4b74">
-        </script>
-      </Helmet>
-      <div className="gcse-search"></div>
-    </div>
-  );
-};

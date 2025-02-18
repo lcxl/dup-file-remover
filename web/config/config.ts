@@ -152,6 +152,7 @@ export default defineConfig({
       projectName: 'dfr',
     },
   ],
+  //mfsu: false,
   mfsu: {
     strategy: 'normal',
   },
