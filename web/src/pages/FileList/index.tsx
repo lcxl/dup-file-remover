@@ -91,7 +91,8 @@ const TableList: React.FC = () => {
     {
       title: <FormattedMessage id="pages.searchTable.titleDesc" defaultMessage="所在目录" />,
       dataIndex: ["file_info", "dir_path"],
-      valueType: 'textarea',
+      copyable: true,
+      ellipsis: true,
     },
     {
       title: (
@@ -137,10 +138,25 @@ const TableList: React.FC = () => {
           defaultMessage="File modified time"
         />
       ),
-      sorter: true,
+      //sorter: true,
       hideInSearch: true,
       dataIndex: ["file_info", "inode_info", "modified"],
       valueType: 'dateTime',
+      renderFormItem: (item, { defaultRender, ...rest }, form) => {
+        return defaultRender(item);
+      },
+    },
+    {
+      key: 'search_file_modified_time',
+      title: (
+        <FormattedMessage
+          id="pages.searchTable.fileModifiedTime"
+          defaultMessage="File modified time"
+        />
+      ),
+      hideInTable: true,
+      dataIndex: ["file_info", "inode_info", "modified"],
+      valueType: 'dateTimeRange',
     },
     {
       title: <FormattedMessage id="pages.searchTable.titleOption" defaultMessage="Operating" />,
@@ -168,7 +184,7 @@ const TableList: React.FC = () => {
 
   return (
     <PageContainer>
-      <ProTable<API.FileInfoWithMd5Count, API.FileInfoWithMd5Count>
+      <ProTable<API.FileInfoWithMd5Count, API.FileInfoWithMd5Count & { search_file_modified_time: string[]; }>
         headerTitle={intl.formatMessage({
           id: 'pages.searchTable.title',
           defaultMessage: 'Enquiry form',
@@ -197,6 +213,7 @@ const TableList: React.FC = () => {
             pageSize?: number;
             current?: number;
             keywords?: string;
+            search_file_modified_time: string[];
           },
           sort,
           filter,
@@ -207,6 +224,8 @@ const TableList: React.FC = () => {
             page_no: params.current!,
             page_count: params.pageSize!,
           };
+          console.info("sort", sort);
+          console.info("filter", filter);
           if (params.file_info?.file_name) {
             list_param.file_name = params.file_info.file_name;
           }
@@ -218,6 +237,10 @@ const TableList: React.FC = () => {
           }
           if (params.file_info?.file_extension) {
             list_param.file_extension = params.file_info.file_extension;
+          }
+          if (params.search_file_modified_time) {
+            list_param.start_modified_time = new Date(params.search_file_modified_time[0]).toISOString();
+            list_param.end_modified_time = new Date(params.search_file_modified_time[1]).toISOString();
           }
 
           const msg = await listFiles(list_param);

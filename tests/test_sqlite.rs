@@ -25,12 +25,7 @@ fn test_list_files() -> Result<(), Box<dyn std::error::Error>> {
         page_count: 100,
         min_file_size: Some(100),
         max_file_size: Some(1000),
-        dir_path: None,
-        file_name: None,
-        file_extension: None,
-        md5: None,
-        created: None,
-        modified: None,
+        ..Default::default()
     };
     let result = database_manager.0.list_files(&query_list_params);
     assert!(result.is_ok());

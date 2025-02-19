@@ -357,11 +357,11 @@ impl DatabaseManager {
         );
         if query_list_params.min_file_size.is_some() {
             params.push(Arc::new(query_list_params.min_file_size.unwrap()));
-            sub_query_sql += "and size >= ? ";
+            sub_query_sql += " and size >= ?";
         }
         if query_list_params.max_file_size.is_some() {
             params.push(Arc::new(query_list_params.max_file_size.unwrap()));
-            sub_query_sql += "and size < ? ";
+            sub_query_sql += " and size < ?";
         }
         sub_query_sql += " group by md5";
 
@@ -375,42 +375,65 @@ impl DatabaseManager {
             sub_query_sql
         );
         if query_list_params.dir_path.is_some() {
-            query_sql += "and a2.dir_path like ? ";
+            query_sql += " and a2.dir_path like ?";
             params.push(Arc::new(format!(
                 "%{}%",
                 query_list_params.dir_path.clone().unwrap()
             )));
         }
         if query_list_params.file_name.is_some() {
-            query_sql += "and a2.file_name like ? ";
+            query_sql += " and a2.file_name like ?";
             params.push(Arc::new(format!(
                 "%{}%",
                 query_list_params.file_name.clone().unwrap()
             )));
         }
         if query_list_params.file_extension.is_some() {
-            query_sql += "and a2.file_extension like ? ";
+            query_sql += " and a2.file_extension like ?";
             params.push(Arc::new(format!(
                 "%{}%",
                 query_list_params.file_extension.clone().unwrap()
             )));
         }
         if query_list_params.md5.is_some() {
-            query_sql += "and a1.md5 = ? ";
+            query_sql += " and a1.md5 = ?";
             params.push(Arc::new(query_list_params.md5.clone().unwrap()));
         }
-        if query_list_params.created.is_some() {
-            query_sql += "and a1.created >= ? and a1.created <= ? ";
-            let created = query_list_params.created.clone().unwrap();
-            params.push(Arc::new(created.start_time));
-            params.push(Arc::new(created.end_time));
+        if query_list_params.start_created_time.is_some() {
+            query_sql += " and a1.created >= ?";
+            let created = query_list_params.start_created_time.clone().unwrap();
+            params.push(Arc::new(created));
         }
-        if query_list_params.modified.is_some() {
-            query_sql += "and a1.modified  >= ? and a1.modified <= ? ";
-            let modified = query_list_params.modified.clone().unwrap();
-            params.push(Arc::new(modified.start_time));
-            params.push(Arc::new(modified.end_time));
+        if query_list_params.end_created_time.is_some() {
+            query_sql += " and a1.created <= ?";
+            let created = query_list_params.end_created_time.clone().unwrap();
+            params.push(Arc::new(created));
         }
+
+        if query_list_params.start_modified_time.is_some() {
+            query_sql += " and a1.modified >= ?";
+            let modified = query_list_params.start_modified_time.clone().unwrap();
+            params.push(Arc::new(modified));
+            info!("start_modified_time: {:?}", modified);
+        }
+        if query_list_params.end_modified_time.is_some() {
+            query_sql += " and a1.modified <= ?";
+            let modified = query_list_params.end_modified_time.clone().unwrap();
+            params.push(Arc::new(modified));
+            info!("end_modified_time: {:?}", modified);
+        }
+        if query_list_params.min_md5_count.is_some() {
+            query_sql += " and a3.md5_count >= ?";
+            let md5_count = query_list_params.min_md5_count.clone().unwrap();
+            params.push(Arc::new(md5_count));
+        }
+
+        if query_list_params.max_md5_count.is_some() {
+            query_sql += " and a3.md5_count < ?";
+            let md5_count = query_list_params.max_md5_count.clone().unwrap();
+            params.push(Arc::new(md5_count));
+        }
+
         let sql = String::from("SELECT a1.inode, a1.dev_id, a1.permissions, a1.nlink, a1.uid, a1.gid, a1.created, a1.modified, a1.md5, a1.size,
             a2.dir_path, a2.file_name, a2.file_extension, a2.scan_time, a2.version, a3.md5_count ") + &query_sql +" order by a3.md5_count desc, a1.size desc
             LIMIT ? OFFSET ?;";

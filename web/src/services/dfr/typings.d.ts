@@ -100,9 +100,11 @@ declare namespace API {
     /** MD5 hash of the file content, used for filtering files by their content. */
     md5?: any;
     /** Optional time range filter for file creation. */
-    created?: null | QueryTimeParams;
+    start_created_time?: any;
+    end_created_time?: any;
     /** Optional time range filter for file modification. */
-    modified?: null | QueryTimeParams;
+    start_modified_time?: any;
+    end_modified_time?: any;
   };
 
   type LoginParams = {
