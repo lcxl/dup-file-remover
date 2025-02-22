@@ -12,7 +12,7 @@ import {
   ProTable,
 } from '@ant-design/pro-components';
 import { FormattedMessage, useIntl, history } from '@umijs/max';
-import { Button, Drawer, Input, message } from 'antd';
+import { Button, Drawer, Input, message, Select, SelectProps } from 'antd';
 import React, { useRef, useState } from 'react';
 
 
@@ -67,8 +67,7 @@ const TableList: React.FC = () => {
         />
       ),
       dataIndex: ["file_info", "file_name"],
-      // @ts-ignore
-      tip: '文件名称',
+      tooltip: '文件名称',
       render: (dom, entity) => {
         return (
           <a
@@ -87,6 +86,45 @@ const TableList: React.FC = () => {
       dataIndex: ["file_info", "file_extension"],
       hideInForm: true,
       hideInTable: true,
+    },
+    {
+      key: 'file_extention_list',
+      title: <FormattedMessage id="pages.searchTable.fileExtentionList" defaultMessage="文件后缀名列表" />,
+      dataIndex: ["file_info", "file_extension"],
+      hideInForm: true,
+      hideInTable: true,
+      renderFormItem: (item, { type, defaultRender, ...rest }, form) => {
+        const options: SelectProps['options'] = [];
+        options.push({
+          value: "jpg",
+          label: "jpg",
+        });
+        options.push({
+          value: "bmp",
+          label: "bmp",
+        });
+        options.push({
+          value: "png",
+          label: "png",
+        });
+        options.push({
+          value: "avi",
+          label: "avi",
+        });
+        options.push({
+          value: "mp4",
+          label: "mp4",
+        });
+        return (
+          <Select
+            {...rest}
+            mode="tags"
+            //placeholder="Tags Mode"
+            options={options}
+          />
+        );
+      },
+      //initialValue: ["jpg", "mp4"],
     },
     {
       title: <FormattedMessage id="pages.searchTable.titleDesc" defaultMessage="所在目录" />,
@@ -159,6 +197,19 @@ const TableList: React.FC = () => {
       valueType: 'dateTimeRange',
     },
     {
+      key: 'search_md5_count',
+      title: (
+        <FormattedMessage
+          id="pages.searchTable.searchMd5Count"
+          defaultMessage="File md5 count range"
+        />
+      ),
+      hideInTable: true,
+      dataIndex: ["md5_count"],
+      valueType: 'digitRange',
+      initialValue: [2, null],
+    },
+    {
       title: <FormattedMessage id="pages.searchTable.titleOption" defaultMessage="Operating" />,
       dataIndex: 'option',
       valueType: 'option',
@@ -184,7 +235,11 @@ const TableList: React.FC = () => {
 
   return (
     <PageContainer>
-      <ProTable<API.FileInfoWithMd5Count, API.FileInfoWithMd5Count & { search_file_modified_time: string[]; }>
+      <ProTable<API.FileInfoWithMd5Count, API.FileInfoWithMd5Count & {
+        search_file_modified_time?: string[];
+        search_md5_count?: number[];
+        file_extention_list?: string[];
+      }>
         headerTitle={intl.formatMessage({
           id: 'pages.searchTable.title',
           defaultMessage: 'Enquiry form',
@@ -213,7 +268,9 @@ const TableList: React.FC = () => {
             pageSize?: number;
             current?: number;
             keywords?: string;
-            search_file_modified_time: string[];
+            search_file_modified_time?: string[];
+            search_md5_count?: number[];
+            file_extention_list?: string[];
           },
           sort,
           filter,
@@ -241,6 +298,13 @@ const TableList: React.FC = () => {
           if (params.search_file_modified_time) {
             list_param.start_modified_time = new Date(params.search_file_modified_time[0]).toISOString();
             list_param.end_modified_time = new Date(params.search_file_modified_time[1]).toISOString();
+          }
+          if (params.search_md5_count) {
+            list_param.min_md5_count = params.search_md5_count[0];
+            list_param.max_md5_count = params.search_md5_count[1];
+          }
+          if (params.file_extention_list && params.file_extention_list.length > 0) {
+            list_param.file_extension_list = params.file_extention_list.join(',');
           }
 
           const msg = await listFiles(list_param);

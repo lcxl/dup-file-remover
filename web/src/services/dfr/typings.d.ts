@@ -97,6 +97,8 @@ declare namespace API {
     file_name?: any;
     /** New field for file extension filtering */
     file_extension?: any;
+    /** Optional file extension list filtering, comma(,) separated values. */
+    file_extension_list?: any;
     /** MD5 hash of the file content, used for filtering files by their content. */
     md5?: any;
     /** Optional time range filter for file creation. */
@@ -105,6 +107,10 @@ declare namespace API {
     /** Optional time range filter for file modification. */
     start_modified_time?: any;
     end_modified_time?: any;
+    /** Minimum file md5 count */
+    min_md5_count?: number;
+    /** Max file md5 count */
+    max_md5_count?: number;
   };
 
   type LoginParams = {

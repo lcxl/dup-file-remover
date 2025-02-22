@@ -75,3 +75,5 @@ pub async fn logout_account(session: Session) -> Result<HttpResponse, AWError> {
     info!("Logout successful");
     Ok(HttpResponse::Ok().finish())
 }
+
+

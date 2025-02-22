@@ -21,7 +21,7 @@ static SCAN_FLAG: AtomicBool = AtomicBool::new(false);
         (status  = 409, description = "Scan already in progress"),
     ),
 )]
-#[post("/api/scan/start")]
+#[post("/scan/start")]
 pub async fn start_scan(
     requst_json: web::Json<ScanRequest>,
     db: web::Data<PoolDatabaseManager>,
@@ -63,7 +63,7 @@ pub async fn start_scan(
 
 /// Stop the current file scan.
 #[utoipa::path(summary = "Stop the current file scan")]
-#[post("/api/scan/stop")]
+#[post("/scan/stop")]
 pub async fn stop_scan() -> Result<HttpResponse, AWError> {
     info!("Stopping scan");
     STOP_SCAN_FLAG.store(true, Ordering::Relaxed);

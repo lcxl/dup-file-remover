@@ -7,7 +7,13 @@ use std::{env, path::PathBuf};
 
 use actix_server::Server;
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
-use actix_web::{cookie::Key, error, middleware::Logger, web, App, HttpResponse, HttpServer};
+use actix_web::{
+    cookie::Key,
+    error,
+    middleware::{from_fn, Logger},
+    web::{self},
+    App, HttpResponse, HttpServer,
+};
 use clap::Parser;
 use config::{Config, ConfigError, Environment, File};
 use log::{info, warn};
@@ -16,7 +22,7 @@ use controller::{
     list::list_files,
     login::{get_captcha, login_account, logout_account},
     scan::{start_scan, stop_scan},
-    user::{get_current_user, get_notices},
+    user::{get_current_user, get_notices, reject_anonymous_users},
 };
 use database::sqlite::PoolDatabaseManager;
 use serde::Deserialize;
@@ -124,14 +130,20 @@ pub fn run() -> Result<Server, Box<dyn std::error::Error>> {
                         .into();
                     }),
             ) // <- limit size of the payload (global configuration)
-            .service(start_scan)
-            .service(stop_scan)
-            .service(list_files)
+            // no need to login for these routes
             .service(login_account)
             .service(logout_account)
             .service(get_current_user)
             .service(get_notices)
             .service(get_captcha)
+            .service(
+                // need to login for these routes
+                utoipa_actix_web::scope("/api/dfr")
+                    .wrap(from_fn(reject_anonymous_users))
+                    .service(start_scan)
+                    .service(stop_scan)
+                    .service(list_files),
+            )
             .openapi_service(|api| {
                 SwaggerUi::new("/swagger-ui/{_:.*}").url("/api/openapi.json", api)
             })

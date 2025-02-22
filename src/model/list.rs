@@ -19,6 +19,8 @@ pub struct QueryListParams {
     pub file_name: Option<String>,
     /// New field for file extension filtering
     pub file_extension: Option<String>,
+    /// Optional file extension list filtering, comma(,) separated values.
+    pub file_extension_list: Option<String>,
     /// MD5 hash of the file content, used for filtering files by their content.
     pub md5: Option<String>,
     /// Optional time range filter for file creation.
@@ -44,6 +46,7 @@ impl Default for QueryListParams {
             dir_path: None,
             file_name: None,
             file_extension: None,
+            file_extension_list: None,
             md5: None,
             start_created_time: None,
             end_created_time: None,

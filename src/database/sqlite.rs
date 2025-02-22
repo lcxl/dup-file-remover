@@ -395,6 +395,17 @@ impl DatabaseManager {
                 query_list_params.file_extension.clone().unwrap()
             )));
         }
+        if query_list_params.file_extension_list.is_some() {
+            query_sql += " and a2.file_extension in (";
+            let file_extension_list = query_list_params.file_extension_list.clone().unwrap();
+            let file_extensions: Vec<&str> = file_extension_list.split(',').collect();
+            let mut file_extension_params = Vec::new();
+            for file_extension in file_extensions.iter() {
+                file_extension_params.push("?");
+                params.push(Arc::new(String::from(*file_extension)));
+            }
+            query_sql += (file_extension_params.join(",") + ")").as_str();
+        }
         if query_list_params.md5.is_some() {
             query_sql += " and a1.md5 = ?";
             params.push(Arc::new(query_list_params.md5.clone().unwrap()));

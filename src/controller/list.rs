@@ -14,7 +14,7 @@ use crate::{
         (status = 200, description = "The list of file info with md5 count", body=FileInfoList)
     ),
 )]
-#[get("/api/list")]
+#[get("/list")]
 pub async fn list_files(
     query_list: web::Query<QueryListParams>,
     db: web::Data<PoolDatabaseManager>,

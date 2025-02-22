@@ -47,7 +47,7 @@ docker run -d --name dup-file-remover \
 
 curl 示例：
 ```bash
-curl -X POST http://localhost:8081/api/scan/start \
+curl -X POST http://localhost:8081/api/dfr/scan/start \
 -H "Content-Type: application/json" \
 -d '{"scan_path": "/home/coder/dup-file-remover/target/release"}'
 ```
@@ -57,7 +57,7 @@ curl -X POST http://localhost:8081/api/scan/start \
 curl 示例：
 
 ```bash
-curl -X POST http://localhost:8081/api/scan/stop \
+curl -X POST http://localhost:8081/api/dfr/scan/stop \
 -H "Content-Type: application/json"
 ```
 

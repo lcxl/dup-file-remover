@@ -1,11 +1,22 @@
-use actix_session::Session;
-use actix_web::{get, Error as AWError, HttpResponse};
+use actix_session::{Session, SessionGetError};
+use actix_web::{body::MessageBody, dev::{ServiceRequest, ServiceResponse}, get, middleware::Next, Error as AWError, FromRequest, HttpResponse};
 use log::{info, warn};
 
 use crate::model::user::{CurrentUser, NoLogintUser, NoticeIconList, UserRespone};
 
 pub const SESSION_KEY_USERNAME: &str = "username";
 pub const USER_ADMIN: &str = "admin";
+
+pub trait SessionExt {
+    fn get_current_user(&self) -> Result<Option<String>, SessionGetError>;
+}
+
+impl SessionExt for Session {
+    fn get_current_user(&self) -> Result<Option<String>, SessionGetError> {
+        self.get::<String>(SESSION_KEY_USERNAME)
+    }
+}
+
 #[utoipa::path(
     summary = "Get current user",
     responses(
@@ -15,7 +26,7 @@ pub const USER_ADMIN: &str = "admin";
 )]
 #[get("/api/currentUser")]
 pub async fn get_current_user(session: Session) -> Result<HttpResponse, AWError> {
-    if let Some(username) = session.get::<String>(SESSION_KEY_USERNAME)? {
+    if let Some(username) = session.get_current_user()? {
         let current_user = CurrentUser {
             name: Some(username),
             avatar: None,
@@ -63,7 +74,7 @@ pub async fn get_current_user(session: Session) -> Result<HttpResponse, AWError>
 )]
 #[get("/api/notices")]
 pub async fn get_notices(session: Session) -> Result<HttpResponse, AWError> {
-    let user = session.get::<String>(SESSION_KEY_USERNAME)?;
+    let user = session.get_current_user()?;
     if user.is_none() {
         return Ok(HttpResponse::Unauthorized().body("User is not logged in."));
     }
@@ -77,4 +88,24 @@ pub async fn get_notices(session: Session) -> Result<HttpResponse, AWError> {
         success: true,
     };
     return Ok(HttpResponse::Ok().json(notice_icon_list));
+}
+
+/// Middleware to reject anonymous users.
+pub async fn reject_anonymous_users(
+    mut req: ServiceRequest,
+    next: Next<impl MessageBody>,
+) -> Result<ServiceResponse<impl MessageBody>, actix_web::Error> {
+    let session = {
+        let (http_request, payload) = req.parts_mut();
+        //TypedSession::from_request(http_request, payload).await
+        Session::from_request(http_request, payload).await
+    }?;
+
+    match session.get_current_user()? {
+        Some(_) => next.call(req).await,
+        None => {
+            warn!("Anonymous user tried to access protected resource.");
+            Err( actix_web::error::ErrorUnauthorized("User is not logged in."))
+        }
+    }
 }

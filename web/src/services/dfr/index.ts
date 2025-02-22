@@ -13,10 +13,10 @@ import * as stopScan from './stopScan';
 export default {
   getCurrentUser,
   listFiles,
+  startScan,
+  stopScan,
   loginAccount,
   getCaptcha,
   logoutAccount,
   getNotices,
-  startScan,
-  stopScan,
 };
