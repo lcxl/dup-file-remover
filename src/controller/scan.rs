@@ -31,13 +31,12 @@ pub async fn start_scan(
         warn!("Scan already in progress. Please wait for it to complete or stop it first.");
         return Ok(HttpResponse::Conflict().body("Scan already in progress"));
     }
-
-    let scan_path = requst_json.scan_path.clone();
-    let path = Path::new(&scan_path);
+    let scan_request = requst_json.into_inner();
+    let path = Path::new(&scan_request.scan_path);
     if !path.exists() {
         return Ok(HttpResponse::NotFound().json(RestResponse::failed(
             ErrorCode::FILE_PATH_NOT_FOUND,
-            format!("Scan path '{}' does not exist", &scan_path),
+            format!("Scan path '{}' does not exist", &scan_request.scan_path),
         )));
     }
     STOP_SCAN_FLAG.store(false, Ordering::Relaxed);
@@ -48,7 +47,7 @@ pub async fn start_scan(
             return;
         }
         let result: Result<(), Box<dyn std::error::Error>> =
-            scan_all_files(&scan_path, db.get_ref()).await;
+            scan_all_files(&scan_request, db.get_ref()).await;
         // reset the flag after scan completion or failure
         SCAN_FLAG.store(false, Ordering::Relaxed);
         if result.is_err() {
@@ -72,26 +71,27 @@ pub async fn stop_scan() -> Result<HttpResponse, AWError> {
 
 /// Scan all files in a directory and its subdirectories.
 pub async fn scan_all_files(
-    scan_path: &String,
+    scan_request: &ScanRequest,
     db: &PoolDatabaseManager,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let path = Path::new(scan_path);
+    let current_path = Path::new(scan_request.scan_path.as_str());
     let start = SystemTime::now();
     let scan_version = start
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
         .as_secs();
-    _scan_all_files(path, scan_version, db).await
+    _scan_all_files(current_path, scan_request, scan_version, db).await
 }
 
 /// Scan all files in a directory and its subdirectories.
 async fn _scan_all_files(
-    path: &Path,
+    current_path: &Path,
+    scan_request: &ScanRequest,
     scan_version: u64,
     db: &PoolDatabaseManager,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    if path.is_dir() {
-        let mut entries = tokio::fs::read_dir(path).await?;
+    if current_path.is_dir() {
+        let mut entries = tokio::fs::read_dir(current_path).await?;
         while let Some(entry) = entries.next_entry().await? {
             if STOP_SCAN_FLAG.load(Ordering::Acquire) {
                 info!("Received stop scan flag, stop scanning");
@@ -99,18 +99,42 @@ async fn _scan_all_files(
                 return Ok(());
             }
             debug!("{:?}", entry.path()); // For demonstration purposes, print the path of each file/directory.
-            if path.is_dir() {
+            if current_path.is_dir() {
                 let sub_path = entry.path();
-                let list_task = Box::pin(_scan_all_files(&sub_path, scan_version, db));
+                let list_task =
+                    Box::pin(_scan_all_files(&sub_path, scan_request, scan_version, db));
                 list_task.await?;
             } else {
-                scan_file(&entry.path(), scan_version, db).await?;
+                if scan_request.include_file_extensions.is_none()
+                    || scan_request
+                        .include_file_extensions
+                        .as_ref()
+                        .unwrap()
+                        .contains(
+                            &entry
+                                .path()
+                                .extension()
+                                .and_then(|ext| ext.to_str().map(String::from))
+                                .unwrap_or_else(|| "".to_string()),
+                        )
+                {
+                    scan_file(&entry.path(), scan_version, db).await?;
+                } else {
+                    info!(
+                        "Skipping file '{:?}' with extension {:?}",
+                        entry.path(),
+                        entry.path().extension()
+                    );
+                }
             }
         }
         //remove deleted files from db if path is directory
-        db.0.remove_deleted_files(path.to_string_lossy().to_string().as_str(), scan_version)?;
+        db.0.remove_deleted_files(
+            current_path.to_string_lossy().to_string().as_str(),
+            scan_version,
+        )?;
     } else {
-        scan_file(path, scan_version, db).await?;
+        scan_file(current_path, scan_version, db).await?;
     }
     Ok(())
 }
