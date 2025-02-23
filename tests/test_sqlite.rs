@@ -8,12 +8,12 @@ use dup_file_remover::{
 fn test_create_sqlite() -> Result<(), Box<dyn std::error::Error>> {
     // Your code here to create an SQLite database and perform operations
     let database_manager = PoolDatabaseManager::new("dfremover.db")?;
-    database_manager.0.drop_tables()?;
-    database_manager.0.create_tables()?;
+    database_manager.drop_tables()?;
+    database_manager.create_tables()?;
     let file_info = FileInfo::new("dfremover.db", 1, Local::now())?;
-    database_manager.0.insert_file_info(&file_info)?;
+    database_manager.insert_file_info(&file_info)?;
     println!("file_name: {}", file_info.file_name);
-    //database_manager.0.drop_tables()?;
+    //database_manager.drop_tables()?;
     Ok(())
 }
 
@@ -27,7 +27,7 @@ fn test_list_files() -> Result<(), Box<dyn std::error::Error>> {
         max_file_size: Some(1000),
         ..Default::default()
     };
-    let result = database_manager.0.list_files(&query_list_params);
+    let result = database_manager.list_files(&query_list_params);
     assert!(result.is_ok());
     let files = result.unwrap();
     println!("Total file count: {}", files.total_count);
@@ -37,7 +37,7 @@ fn test_list_files() -> Result<(), Box<dyn std::error::Error>> {
             index, file.md5_count, file.file_info
         );
     }
-    
-    //database_manager.0.drop_tables()?;
+
+    //database_manager.drop_tables()?;
     Ok(())
 }

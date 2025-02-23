@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 
 use super::sqlite::FileInfoDO;
 /// Inode info
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize, Clone, ToSchema)]
 pub struct InodeInfo {
     /// Inode number
     pub inode: u64,
@@ -40,7 +40,7 @@ impl PartialEq<InodeInfo> for InodeInfo {
             && self.size == other.size
     }
 }
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize, ToSchema, Clone)]
 pub struct FileInfo {
     /// Inode info
     pub inode_info: InodeInfo,

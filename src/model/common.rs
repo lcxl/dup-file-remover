@@ -2,7 +2,7 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 #[derive(Serialize, ToSchema)]
-pub struct RestResponse<T : ToSchema> {
+pub struct RestResponse<T: ToSchema> {
     success: bool,
     code: i32,
     message: Option<String>,
@@ -36,18 +36,21 @@ impl RestResponse<()> {
     }
 }
 
-impl<T : ToSchema> RestResponse<T> {
-
-    pub fn succeed_with_data(data: Option<T>) -> Self {
+impl<T: ToSchema> RestResponse<T> {
+    pub fn succeed_with_data(data: T) -> Self {
         RestResponse {
             success: true,
             code: ErrorCode::SUCCESS.0,
             message: None,
-            data,
+            data: Some(data),
         }
     }
 
-    pub fn failed_with_data(error_code: ErrorCode, message: Option<String>, data: Option<T>) -> Self {
+    pub fn failed_with_data(
+        error_code: ErrorCode,
+        message: Option<String>,
+        data: Option<T>,
+    ) -> Self {
         RestResponse {
             success: false,
             code: error_code.0,

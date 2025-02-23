@@ -5,12 +5,28 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::database::file_info::FileInfo;
 use crate::database::sqlite::PoolDatabaseManager;
 use crate::model::common::{ErrorCode, RestResponse};
-use crate::model::scan::ScanRequest;
-use actix_web::{post, web, Error as AWError, HttpResponse};
-use chrono::Local;
+use crate::model::scan::{ScanRequest, ScanStatus, SharedScanStatus};
+use actix_web::{get, post, web, Error as AWError, HttpResponse};
+use chrono::{DateTime, Local};
 use log::{debug, error, info, warn};
+
 static STOP_SCAN_FLAG: AtomicBool = AtomicBool::new(false);
 static SCAN_FLAG: AtomicBool = AtomicBool::new(false);
+
+#[utoipa::path(
+    summary = "Get scan status",
+    responses(
+        (status = 200, description = "Scan status", body = RestResponse<ScanStatus>),
+    ),
+)]
+#[get("/scan/status")]
+pub async fn query_scan_status(
+    scan_status: web::Data<SharedScanStatus>,
+) -> Result<HttpResponse, AWError> {
+    // Implementation of scan_status function
+    let response = scan_status.lock().await.clone();
+    Ok(HttpResponse::Ok().json(RestResponse::succeed_with_data(response)))
+}
 
 /// Start a new scan. If a scan is already in progress, return a conflict error.
 #[utoipa::path(
@@ -25,6 +41,7 @@ static SCAN_FLAG: AtomicBool = AtomicBool::new(false);
 pub async fn start_scan(
     requst_json: web::Json<ScanRequest>,
     db: web::Data<PoolDatabaseManager>,
+    scan_status: web::Data<SharedScanStatus>,
 ) -> Result<HttpResponse, AWError> {
     let is_scan_started = SCAN_FLAG.load(Ordering::Acquire);
     if is_scan_started {
@@ -46,8 +63,9 @@ pub async fn start_scan(
             error!("Failed to acquire lock for scan, giving up");
             return;
         }
+
         let result: Result<(), Box<dyn std::error::Error>> =
-            scan_all_files(&scan_request, db.get_ref()).await;
+            scan_all_files(&scan_request, db.get_ref(), scan_status.get_ref()).await;
         // reset the flag after scan completion or failure
         SCAN_FLAG.store(false, Ordering::Relaxed);
         if result.is_err() {
@@ -63,9 +81,11 @@ pub async fn start_scan(
 /// Stop the current file scan.
 #[utoipa::path(summary = "Stop the current file scan")]
 #[post("/scan/stop")]
-pub async fn stop_scan() -> Result<HttpResponse, AWError> {
+pub async fn stop_scan(scan_status: web::Data<SharedScanStatus>) -> Result<HttpResponse, AWError> {
     info!("Stopping scan");
     STOP_SCAN_FLAG.store(true, Ordering::Relaxed);
+    let mut status = scan_status.lock().await;
+    status.started = false;
     Ok(HttpResponse::Ok().json(RestResponse::succeed()))
 }
 
@@ -73,6 +93,7 @@ pub async fn stop_scan() -> Result<HttpResponse, AWError> {
 pub async fn scan_all_files(
     scan_request: &ScanRequest,
     db: &PoolDatabaseManager,
+    scan_status: &SharedScanStatus,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let current_path = Path::new(scan_request.scan_path.as_str());
     let start = SystemTime::now();
@@ -80,7 +101,15 @@ pub async fn scan_all_files(
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
         .as_secs();
-    _scan_all_files(current_path, scan_request, scan_version, db).await
+    {
+        let mut status = scan_status.lock().await;
+        // convert system time to chrono local datetime
+        status.start_time = Some(DateTime::<Local>::from(start));
+        status.scanned_file_count = 0;
+        status.scan_request = Some(scan_request.clone());
+        status.started = true;
+    }
+    _scan_all_files(current_path, scan_request, scan_version, db, scan_status).await
 }
 
 /// Scan all files in a directory and its subdirectories.
@@ -89,20 +118,26 @@ async fn _scan_all_files(
     scan_request: &ScanRequest,
     scan_version: u64,
     db: &PoolDatabaseManager,
+    scan_status: &SharedScanStatus,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if current_path.is_dir() {
         let mut entries = tokio::fs::read_dir(current_path).await?;
         while let Some(entry) = entries.next_entry().await? {
             if STOP_SCAN_FLAG.load(Ordering::Acquire) {
                 info!("Received stop scan flag, stop scanning");
-                db.0.remove_deleted_inode()?;
+                db.remove_deleted_inode()?;
                 return Ok(());
             }
             debug!("{:?}", entry.path()); // For demonstration purposes, print the path of each file/directory.
             if current_path.is_dir() {
                 let sub_path = entry.path();
-                let list_task =
-                    Box::pin(_scan_all_files(&sub_path, scan_request, scan_version, db));
+                let list_task = Box::pin(_scan_all_files(
+                    &sub_path,
+                    scan_request,
+                    scan_version,
+                    db,
+                    scan_status,
+                ));
                 list_task.await?;
             } else {
                 if scan_request.include_file_extensions.is_none()
@@ -118,7 +153,7 @@ async fn _scan_all_files(
                                 .unwrap_or_else(|| "".to_string()),
                         )
                 {
-                    scan_file(&entry.path(), scan_version, db).await?;
+                    scan_file(&entry.path(), scan_version, db, scan_status).await?;
                 } else {
                     info!(
                         "Skipping file '{:?}' with extension {:?}",
@@ -129,12 +164,12 @@ async fn _scan_all_files(
             }
         }
         //remove deleted files from db if path is directory
-        db.0.remove_deleted_files(
+        db.remove_deleted_files(
             current_path.to_string_lossy().to_string().as_str(),
             scan_version,
         )?;
     } else {
-        scan_file(current_path, scan_version, db).await?;
+        scan_file(current_path, scan_version, db, scan_status).await?;
     }
     Ok(())
 }
@@ -143,13 +178,20 @@ async fn scan_file(
     file_path: &Path,
     scan_version: u64,
     db: &PoolDatabaseManager,
+    scan_status: &SharedScanStatus,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut file_info = FileInfo::new(
         file_path.to_string_lossy().to_string().as_str(),
         scan_version,
         Local::now(),
     )?;
-    let manager = &db.0;
+    {
+        let mut status = scan_status.lock().await;
+        //inc scanned file count and set current file info
+        status.scanned_file_count += 1;
+        status.current_file_info = Some(file_info.clone());
+    }
+    let manager = db;
     let get_file_result = manager.get_file_by_path(&file_info.dir_path, &file_info.file_name);
     if get_file_result.is_ok() {
         // check file update time and update if necessary

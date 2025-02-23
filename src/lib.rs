@@ -21,10 +21,11 @@ use log::{info, warn};
 use controller::{
     list::list_files,
     login::{get_captcha, login_account, logout_account},
-    scan::{start_scan, stop_scan},
+    scan::{query_scan_status, start_scan, stop_scan},
     user::{get_current_user, get_notices, reject_anonymous_users},
 };
 use database::sqlite::PoolDatabaseManager;
+use model::scan::SharedScanStatus;
 use serde::Deserialize;
 use utils::network::check_ipv6_available;
 use utoipa_actix_web::AppExt;
@@ -108,8 +109,10 @@ pub fn run() -> Result<Server, Box<dyn std::error::Error>> {
     let secret_key = Key::generate();
 
     let database_manager = PoolDatabaseManager::new("dfremover.db").unwrap();
-    database_manager.0.create_tables().unwrap();
+    database_manager.create_tables().unwrap();
     let _settings = settings.clone();
+    // create shared scan status for scan progress tracking
+    let scan_status_data = web::Data::new(SharedScanStatus::new());
     //start the server
     let mut http_server = HttpServer::new(move || {
         App::new()
@@ -117,6 +120,7 @@ pub fn run() -> Result<Server, Box<dyn std::error::Error>> {
             .map(|app| app.wrap(Logger::default()))
             .app_data(web::Data::new(database_manager.clone()))
             .app_data(web::Data::new(_settings.clone()))
+            .app_data(scan_status_data.clone())
             .app_data(
                 web::JsonConfig::default()
                     .limit(4096 * 1024 << 2)
@@ -142,6 +146,7 @@ pub fn run() -> Result<Server, Box<dyn std::error::Error>> {
                     .wrap(from_fn(reject_anonymous_users))
                     .service(start_scan)
                     .service(stop_scan)
+                    .service(query_scan_status)
                     .service(list_files),
             )
             .openapi_service(|api| {

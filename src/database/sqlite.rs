@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use chrono::{DateTime, Local};
 use log::{error, info};
@@ -30,16 +30,24 @@ pub struct DatabaseManager {
 
 pub struct PoolDatabaseManager(pub Arc<DatabaseManager>);
 
+impl PoolDatabaseManager {
+    pub fn new(path: &str) -> Result<Self> {
+        let mgr = Arc::new(DatabaseManager::new(path).unwrap());
+        Ok(PoolDatabaseManager(mgr))
+    }
+}
+
 impl Clone for PoolDatabaseManager {
     fn clone(&self) -> PoolDatabaseManager {
         PoolDatabaseManager(self.0.clone())
     }
 }
 
-impl PoolDatabaseManager {
-    pub fn new(path: &str) -> Result<Self> {
-        let mgr = Arc::new(DatabaseManager::new(path).unwrap());
-        Ok(PoolDatabaseManager(mgr))
+impl Deref for PoolDatabaseManager {
+    type Target = Arc<DatabaseManager>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
