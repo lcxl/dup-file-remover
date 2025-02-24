@@ -1,11 +1,15 @@
+import { startScan } from '@/services/dfr/startScan';
 import { HeartTwoTone, SmileTwoTone } from '@ant-design/icons';
-import { PageContainer } from '@ant-design/pro-components';
+import { PageContainer, ProForm, ProFormDigit, ProFormInstance, ProFormSelect, ProFormText } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { Alert, Card, Typography } from 'antd';
-import React from 'react';
+import { Alert, Card, message, Typography } from 'antd';
+import React, { useRef } from 'react';
 
 const Admin: React.FC = () => {
   const intl = useIntl();
+  const formRef = useRef<
+    ProFormInstance<API.ScanRequest>
+  >();
   return (
     <PageContainer
       content={intl.formatMessage({
@@ -27,6 +31,39 @@ const Admin: React.FC = () => {
             marginBottom: 48,
           }}
         />
+        <ProForm<API.ScanRequest>
+          onFinish={async (values) => {
+            console.log('ProForm values: ', values);
+            const val1 = await formRef.current?.validateFields();
+            console.log('validateFields:', val1);
+            const val2 = await formRef.current?.validateFieldsReturnFormatValue?.();
+            console.log('validateFieldsReturnFormatValue:', val2);
+
+            const result = await startScan(values);
+
+            console.log('startScan result:', result);
+
+            message.success('提交成功');
+          }}
+        >
+          <ProFormText name="scan_path" label="要扫描的路径" />
+          <ProFormSelect name="include_file_extensions"
+            label="要扫描的文件名后缀"
+            mode='tags'
+            request={async (params) => {
+              console.log("ProFormSelect request:", params)
+              return [
+                { label: "图片", value: 'jpg' },
+                { label: 'Unresolved', value: 'open' },
+                { label: 'Resolved', value: 'closed' },
+                { label: 'Resolving', value: 'processing' },
+              ];
+            }}
+          />
+          <ProFormDigit label="最小文件大小" name="min_file_size" />
+          <ProFormDigit label="最大文件大小" name="max_file_size" />
+
+        </ProForm>
         <Typography.Title level={2} style={{ textAlign: 'center' }}>
           <SmileTwoTone /> Ant Design Pro <HeartTwoTone twoToneColor="#eb2f96" /> You
         </Typography.Title>

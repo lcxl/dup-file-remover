@@ -51,7 +51,7 @@ pub async fn start_scan(
     let scan_request = requst_json.into_inner();
     let path = Path::new(&scan_request.scan_path);
     if !path.exists() {
-        return Ok(HttpResponse::NotFound().json(RestResponse::failed(
+        return Ok(HttpResponse::Ok().json(RestResponse::failed(
             ErrorCode::FILE_PATH_NOT_FOUND,
             format!("Scan path '{}' does not exist", &scan_request.scan_path),
         )));
@@ -191,8 +191,7 @@ async fn scan_file(
         status.scanned_file_count += 1;
         status.current_file_info = Some(file_info.clone());
     }
-    let manager = db;
-    let get_file_result = manager.get_file_by_path(&file_info.dir_path, &file_info.file_name);
+    let get_file_result = db.get_file_by_path(&file_info.dir_path, &file_info.file_name);
     if get_file_result.is_ok() {
         // check file update time and update if necessary
         let db_file_info = get_file_result.unwrap();
@@ -201,7 +200,7 @@ async fn scan_file(
                 "File '{}' already exists and is same in database, update version from {} to {}",
                 file_info.file_path, db_file_info.version, file_info.version
             );
-            manager.update_version(&file_info)?;
+            db.update_version(&file_info)?;
             return Ok(());
         } else {
             info!("File '{}' is changed, need to update", file_info.file_path);
@@ -216,6 +215,6 @@ async fn scan_file(
     }
     // update file md5 and insert into db
     file_info.update_md5()?;
-    manager.insert_file_info(&file_info)?;
+    db.insert_file_info(&file_info)?;
     Ok(())
 }

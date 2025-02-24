@@ -158,9 +158,40 @@ declare namespace API {
     success: boolean;
   };
 
+  type RestResponseScanStatus = {
+    code: number;
+    /** Scan status structure to keep track of the progress and state of a file scan operation. */
+    data?: {
+      current_file_info?: null | FileInfo;
+      scan_request?: null | ScanRequest;
+      scanned_file_count: number;
+      start_time?: any;
+      started: boolean;
+    };
+    message?: any;
+    success: boolean;
+  };
+
   type ScanRequest = {
+    /** Optional list of file extensions to include in the scan. If not provided, all files will be scanned. */
+    include_file_extensions?: any;
+    /** Maximum file size in bytes to include in the scan. If not provided, there is no maximum size limit. */
+    max_file_size?: number;
+    /** Minimum file size in bytes to include in the scan. If not provided, there is no minimum size limit. */
+    min_file_size?: number;
     /** Scan path */
     scan_path: string;
+  };
+
+  type ScanStatus = {
+    current_file_info?: null | FileInfo;
+    scan_request?: null | ScanRequest;
+    /** Number of files scanned so far. */
+    scanned_file_count: number;
+    /** Start time of the scan. */
+    start_time?: any;
+    /** Indicates whether the scan has started. */
+    started: boolean;
   };
 
   type UserResponeCurrentUser = {

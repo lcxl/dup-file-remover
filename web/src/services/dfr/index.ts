@@ -8,12 +8,14 @@ import * as getNotices from './getNotices';
 import * as listFiles from './listFiles';
 import * as loginAccount from './loginAccount';
 import * as logoutAccount from './logoutAccount';
+import * as queryScanStatus from './queryScanStatus';
 import * as startScan from './startScan';
 import * as stopScan from './stopScan';
 export default {
   getCurrentUser,
   listFiles,
   startScan,
+  queryScanStatus,
   stopScan,
   loginAccount,
   getCaptcha,

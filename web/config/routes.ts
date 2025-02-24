@@ -59,7 +59,7 @@ export default [
   },
   {
     path: '/',
-    redirect: '/welcome',
+    redirect: '/filelist',
   },
   {
     path: '*',

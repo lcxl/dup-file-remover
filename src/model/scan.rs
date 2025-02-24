@@ -13,14 +13,23 @@ pub struct ScanRequest {
     pub scan_path: String,
     /// Optional list of file extensions to include in the scan. If not provided, all files will be scanned.
     pub include_file_extensions: Option<Vec<String>>,
+    /// Minimum file size in bytes to include in the scan. If not provided, there is no minimum size limit.
+    pub min_file_size: Option<u64>,
+    /// Maximum file size in bytes to include in the scan. If not provided, there is no maximum size limit.
+    pub max_file_size: Option<u64>,
 }
-
+/// Scan status structure to keep track of the progress and state of a file scan operation.
 #[derive(Serialize, ToSchema, Debug, Clone)]
 pub struct ScanStatus {
+    /// Scan request details
     pub scan_request: Option<ScanRequest>,
+    /// Indicates whether the scan has started.
     pub started: bool,
+    /// Start time of the scan.
     pub start_time: Option<DateTime<Local>>,
+    /// Number of files scanned so far.
     pub scanned_file_count: usize,
+    /// Information about the current file being processed during the scan.
     pub current_file_info: Option<FileInfo>,
 }
 
