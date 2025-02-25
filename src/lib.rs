@@ -25,7 +25,10 @@ use controller::{
     user::{get_current_user, get_notices, reject_anonymous_users},
 };
 use database::sqlite::PoolDatabaseManager;
-use model::scan::SharedScanStatus;
+use model::{
+    common::{ErrorCode, RestResponse},
+    scan::SharedScanStatus,
+};
 use serde::Deserialize;
 use utils::network::check_ipv6_available;
 use utoipa_actix_web::AppExt;
@@ -127,9 +130,11 @@ pub fn run() -> Result<Server, Box<dyn std::error::Error>> {
                     .error_handler(|err, req| {
                         // <- create custom error response
                         warn!("progress request {} err: {}", req.path(), err);
+                        let err_message = err.to_string();
                         return error::InternalError::from_response(
                             err,
-                            HttpResponse::BadRequest().finish(),
+                            HttpResponse::BadRequest()
+                                .json(RestResponse::failed(ErrorCode::UNKNOWN_ERROR, err_message)),
                         )
                         .into();
                     }),

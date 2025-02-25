@@ -109,7 +109,12 @@ pub async fn scan_all_files(
         status.scan_request = Some(scan_request.clone());
         status.started = true;
     }
-    _scan_all_files(current_path, scan_request, scan_version, db, scan_status).await
+    let result = _scan_all_files(current_path, scan_request, scan_version, db, scan_status).await;
+    {
+        let mut status = scan_status.lock().await;
+        status.started = false;
+    }
+    return result;
 }
 
 /// Scan all files in a directory and its subdirectories.

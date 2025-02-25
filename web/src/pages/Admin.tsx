@@ -1,22 +1,60 @@
+import { queryScanStatus } from '@/services/dfr/queryScanStatus';
 import { startScan } from '@/services/dfr/startScan';
+import { stopScan } from '@/services/dfr/stopScan';
 import { HeartTwoTone, SmileTwoTone } from '@ant-design/icons';
 import { PageContainer, ProForm, ProFormDigit, ProFormInstance, ProFormSelect, ProFormText } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { Alert, Card, message, Typography } from 'antd';
-import React, { useRef } from 'react';
+import { Alert, Button, Card, message, Space, Typography } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
 
 const Admin: React.FC = () => {
   const intl = useIntl();
+  // scaning state to track if the scan is running or not
+  const [scaning, setScaning] = useState<boolean>(false);
+  const [timerId, setTimerId] = useState<NodeJS.Timeout | null>(null);
+  const scaningRef = useRef(scaning);
+
+  useEffect(() => {
+    scaningRef.current = scaning;
+  }, [scaning]);
+
+  useEffect(() => {
+    const id = setInterval(async () => {
+      // 定时器执行的代码
+      console.info("定时器执行中...")
+      if (scaningRef.current) { // 只有在扫描进行中时才执行获取进度的操作
+        const progress = await queryScanStatus();
+        console.log('当前进度:', progress);
+        if (!progress.data?.started) {
+          setScaning(false); // 如果扫描已结束，则设置 scaning 为 false
+        }
+      }
+    }, 3000);
+    setTimerId(id);
+
+    return () => {
+      clearInterval(timerId!); // 组件卸载时清除定时器
+    };
+  }, []);
   const formRef = useRef<
     ProFormInstance<API.ScanRequest>
   >();
   return (
-    <PageContainer
-      content={intl.formatMessage({
-        id: 'pages.admin.subPage.title',
-        defaultMessage: 'This page can only be viewed by admin',
-      })}
-    >
+    <PageContainer>
+      <Card>
+        <Space>
+          <Button
+            type="primary"
+            disabled={!scaning}
+            onClick={async () => {
+              const result = await stopScan();
+              console.log('stopScan result:', result);
+              message.success('扫描已停止');
+              setScaning(false);
+            }}
+          >停止扫描</Button>
+        </Space>
+      </Card>
       <Card>
         <Alert
           message={intl.formatMessage({
@@ -32,18 +70,24 @@ const Admin: React.FC = () => {
           }}
         />
         <ProForm<API.ScanRequest>
+          disabled={scaning}
+          submitter={{
+            searchConfig: {
+              submitText: '开始扫描',
+            }
+          }}
           onFinish={async (values) => {
             console.log('ProForm values: ', values);
             const val1 = await formRef.current?.validateFields();
             console.log('validateFields:', val1);
             const val2 = await formRef.current?.validateFieldsReturnFormatValue?.();
             console.log('validateFieldsReturnFormatValue:', val2);
-
+            setScaning(true);
             const result = await startScan(values);
 
             console.log('startScan result:', result);
 
-            message.success('提交成功');
+            message.success('开始扫描...');
           }}
         >
           <ProFormText name="scan_path" label="要扫描的路径" />
@@ -53,15 +97,15 @@ const Admin: React.FC = () => {
             request={async (params) => {
               console.log("ProFormSelect request:", params)
               return [
-                { label: "图片", value: 'jpg' },
-                { label: 'Unresolved', value: 'open' },
-                { label: 'Resolved', value: 'closed' },
-                { label: 'Resolving', value: 'processing' },
+                { label: "jpg图片", value: 'jpg' },
+                { label: 'bmp图片', value: 'bmp' },
+                { label: 'png图片', value: 'png' },
+                { label: 'heic图片', value: 'heic' },
               ];
             }}
           />
-          <ProFormDigit label="最小文件大小" name="min_file_size" />
-          <ProFormDigit label="最大文件大小" name="max_file_size" />
+          <ProFormDigit label="最小文件大小" name="min_file_size" min={0} />
+          <ProFormDigit label="最大文件大小" name="max_file_size" min={0} />
 
         </ProForm>
         <Typography.Title level={2} style={{ textAlign: 'center' }}>
