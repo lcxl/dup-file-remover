@@ -6,6 +6,7 @@ use crate::database::file_info::FileInfo;
 use crate::database::sqlite::PoolDatabaseManager;
 use crate::model::common::{ErrorCode, RestResponse};
 use crate::model::scan::{ScanRequest, ScanStatus, SharedScanStatus};
+use crate::utils::error::DfrError;
 use actix_web::{get, post, web, Error as AWError, HttpResponse};
 use chrono::{DateTime, Local};
 use log::{debug, error, info, warn};
@@ -64,8 +65,7 @@ pub async fn start_scan(
             return;
         }
 
-        let result: Result<(), Box<dyn std::error::Error>> =
-            scan_all_files(&scan_request, db.get_ref(), scan_status.get_ref()).await;
+        let result = scan_all_files(&scan_request, db.get_ref(), scan_status.get_ref()).await;
         // reset the flag after scan completion or failure
         SCAN_FLAG.store(false, Ordering::Relaxed);
         if result.is_err() {
@@ -94,7 +94,7 @@ pub async fn scan_all_files(
     scan_request: &ScanRequest,
     db: &PoolDatabaseManager,
     scan_status: &SharedScanStatus,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), DfrError> {
     let current_path = Path::new(scan_request.scan_path.as_str());
     let start = SystemTime::now();
     let scan_version = start
@@ -110,10 +110,12 @@ pub async fn scan_all_files(
         status.started = true;
     }
     let result = _scan_all_files(current_path, scan_request, scan_version, db, scan_status).await;
+
     {
         let mut status = scan_status.lock().await;
         status.started = false;
     }
+
     return result;
 }
 
@@ -124,7 +126,7 @@ async fn _scan_all_files(
     scan_version: u64,
     db: &PoolDatabaseManager,
     scan_status: &SharedScanStatus,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), DfrError> {
     if current_path.is_dir() {
         let mut entries = tokio::fs::read_dir(current_path).await?;
         while let Some(entry) = entries.next_entry().await? {
@@ -134,7 +136,7 @@ async fn _scan_all_files(
                 return Ok(());
             }
             debug!("{:?}", entry.path()); // For demonstration purposes, print the path of each file/directory.
-            if current_path.is_dir() {
+            if entry.path().is_dir() {
                 let sub_path = entry.path();
                 let list_task = Box::pin(_scan_all_files(
                     &sub_path,
@@ -145,27 +147,7 @@ async fn _scan_all_files(
                 ));
                 list_task.await?;
             } else {
-                if scan_request.include_file_extensions.is_none()
-                    || scan_request
-                        .include_file_extensions
-                        .as_ref()
-                        .unwrap()
-                        .contains(
-                            &entry
-                                .path()
-                                .extension()
-                                .and_then(|ext| ext.to_str().map(String::from))
-                                .unwrap_or_else(|| "".to_string()),
-                        )
-                {
-                    scan_file(&entry.path(), scan_version, db, scan_status).await?;
-                } else {
-                    info!(
-                        "Skipping file '{:?}' with extension {:?}",
-                        entry.path(),
-                        entry.path().extension()
-                    );
-                }
+                scan_file(scan_request, &entry.path(), scan_version, db, scan_status).await?;
             }
         }
         //remove deleted files from db if path is directory
@@ -174,22 +156,37 @@ async fn _scan_all_files(
             scan_version,
         )?;
     } else {
-        scan_file(current_path, scan_version, db, scan_status).await?;
+        scan_file(scan_request, current_path, scan_version, db, scan_status).await?;
     }
     Ok(())
 }
 
 async fn scan_file(
+    scan_request: &ScanRequest,
     file_path: &Path,
     scan_version: u64,
     db: &PoolDatabaseManager,
     scan_status: &SharedScanStatus,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), DfrError> {
+    if let Some(ref extensions) = scan_request.include_file_extensions {
+        if let Some(ext) = file_path.extension().and_then(|ext| ext.to_str()) {
+            if !extensions.contains(&String::from(ext)) {
+                debug!("Skipping file '{:?}' with extension {:?}", file_path, ext);
+                return Ok(());
+            }
+        } else {
+            // Handle the case where there is no valid extension
+            debug!("Skipping file '{:?}' due to invalid extension", file_path);
+            return Ok(());
+        }
+    }
+
     let mut file_info = FileInfo::new(
         file_path.to_string_lossy().to_string().as_str(),
         scan_version,
         Local::now(),
     )?;
+
     {
         let mut status = scan_status.lock().await;
         //inc scanned file count and set current file info

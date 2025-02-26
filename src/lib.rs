@@ -30,7 +30,7 @@ use model::{
     scan::SharedScanStatus,
 };
 use serde::Deserialize;
-use utils::network::check_ipv6_available;
+use utils::{error::DfrError, network::check_ipv6_available};
 use utoipa_actix_web::AppExt;
 use utoipa_rapidoc::RapiDoc;
 use utoipa_redoc::{Redoc, Servable as _};
@@ -94,7 +94,7 @@ impl Settings {
     }
 }
 
-pub fn run() -> Result<Server, Box<dyn std::error::Error>> {
+pub fn run() -> Result<Server, DfrError> {
     let args = Args::parse();
     let settings = Settings::new(&args)?;
 

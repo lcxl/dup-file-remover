@@ -4,14 +4,15 @@ import { stopScan } from '@/services/dfr/stopScan';
 import { HeartTwoTone, SmileTwoTone } from '@ant-design/icons';
 import { PageContainer, ProForm, ProFormDigit, ProFormInstance, ProFormSelect, ProFormText } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { Alert, Button, Card, message, Space, Typography } from 'antd';
+import { Alert, Button, Card, Col, message, Row, Space, Typography } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
-
+const { Title, Paragraph, Text, Link } = Typography;
 const Admin: React.FC = () => {
   const intl = useIntl();
   // scaning state to track if the scan is running or not
   const [scaning, setScaning] = useState<boolean>(false);
   const [timerId, setTimerId] = useState<NodeJS.Timeout | null>(null);
+  const [scanStatus, setScanStatus] = useState<API.RestResponseScanStatus | null>(null);
   const scaningRef = useRef(scaning);
 
   useEffect(() => {
@@ -23,13 +24,14 @@ const Admin: React.FC = () => {
       // 定时器执行的代码
       console.info("定时器执行中...")
       if (scaningRef.current) { // 只有在扫描进行中时才执行获取进度的操作
-        const progress = await queryScanStatus();
-        console.log('当前进度:', progress);
-        if (!progress.data?.started) {
+        const scan_status = await queryScanStatus();
+        console.log('当前进度:', scan_status);
+        setScanStatus(scan_status);
+        if (!scan_status.data?.started) {
           setScaning(false); // 如果扫描已结束，则设置 scaning 为 false
         }
       }
-    }, 3000);
+    }, 1000);
     setTimerId(id);
 
     return () => {
@@ -54,6 +56,16 @@ const Admin: React.FC = () => {
             }}
           >停止扫描</Button>
         </Space>
+
+        <Row>
+          <Col span={8}>已扫描文件数：</Col>
+          <Col span={16}>{scanStatus?.data?.scanned_file_count}</Col>
+        </Row>
+        <Row>
+          <Col span={8}>当前文件：</Col>
+          <Col span={16}>{scanStatus?.data?.current_file_info?.file_path}</Col>
+        </Row>
+
       </Card>
       <Card>
         <Alert

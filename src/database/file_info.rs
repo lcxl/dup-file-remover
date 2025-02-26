@@ -5,6 +5,8 @@ use md5::{Digest, Md5};
 use serde::Serialize;
 use utoipa::ToSchema;
 
+use crate::utils::error::DfrError;
+
 use super::sqlite::FileInfoDO;
 /// Inode info
 #[derive(Debug, Serialize, Clone, ToSchema)]
@@ -63,7 +65,7 @@ impl FileInfo {
         file_path: &str,
         version: u64,
         scan_time: DateTime<Local>,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> Result<Self, DfrError> {
         let file_path = std::fs::canonicalize(file_path)?;
         let metadata = std::fs::metadata(file_path.clone())?;
         let file_name = file_path.file_name().unwrap().to_string_lossy().to_string();
@@ -99,7 +101,7 @@ impl FileInfo {
         })
     }
 
-    pub fn update_md5(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn update_md5(&mut self) -> Result<(), DfrError> {
         let file_path = format!("{}/{}", self.dir_path, self.file_name);
         self.inode_info.md5 = Some(format!(
             "{:x}",

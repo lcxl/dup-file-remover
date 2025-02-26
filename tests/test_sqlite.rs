@@ -2,10 +2,11 @@ use chrono::Local;
 use dup_file_remover::{
     database::{file_info::FileInfo, sqlite::PoolDatabaseManager},
     model::list::QueryListParams,
+    utils::error::DfrError,
 };
 
 #[test]
-fn test_create_sqlite() -> Result<(), Box<dyn std::error::Error>> {
+fn test_create_sqlite() -> Result<(), DfrError> {
     // Your code here to create an SQLite database and perform operations
     let database_manager = PoolDatabaseManager::new("dfremover.db")?;
     database_manager.drop_tables()?;
