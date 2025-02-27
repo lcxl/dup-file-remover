@@ -69,6 +69,7 @@ export default {
   'pages.searchTable.batchApproval': 'batch approval',
   'pages.searchTable.fileModifiedTime': 'File modified time',
   'pages.searchTable.fileMd5': 'File md5',
+  'pages.searchTable.fileSize': 'File size',
   'pages.searchTable.fileExtention': 'File extension',
   'pages.searchTable.fileExtentionList': 'File extension list',
   'pages.searchTable.searchMd5Count': 'File md5 count range',

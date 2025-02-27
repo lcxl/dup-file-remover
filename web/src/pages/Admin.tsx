@@ -20,10 +20,21 @@ const Admin: React.FC = () => {
   }, [scaning]);
 
   useEffect(() => {
-    const id = setInterval(async () => {
+    (async () => {
+      const scan_status = await queryScanStatus();
+      console.log('当前进度:', scan_status);
+      setScanStatus(scan_status);
+      setScaning(!!scan_status.data?.started);
+    })();
+  }, []);
+
+  useEffect(() => {
+    async function requestScanStatus() {
       // 定时器执行的代码
-      console.info("定时器执行中...")
+      // console.info("定时器执行中...")
+      var timeout = 3000; // 设置定时器间隔为 3 秒
       if (scaningRef.current) { // 只有在扫描进行中时才执行获取进度的操作
+        timeout = 100; // 如果扫描进行中，则将定时器间隔设置为 100 毫秒
         const scan_status = await queryScanStatus();
         console.log('当前进度:', scan_status);
         setScanStatus(scan_status);
@@ -31,11 +42,14 @@ const Admin: React.FC = () => {
           setScaning(false); // 如果扫描已结束，则设置 scaning 为 false
         }
       }
-    }, 1000);
+      const id = setTimeout(requestScanStatus, timeout);
+      setTimerId(id);
+    }
+    const id = setTimeout(requestScanStatus, 0);
     setTimerId(id);
 
     return () => {
-      clearInterval(timerId!); // 组件卸载时清除定时器
+      clearTimeout(timerId!); // 组件卸载时清除定时器
     };
   }, []);
   const formRef = useRef<
@@ -62,8 +76,16 @@ const Admin: React.FC = () => {
           <Col span={16}>{scanStatus?.data?.scanned_file_count}</Col>
         </Row>
         <Row>
+          <Col span={8}>当前目录：</Col>
+          <Col span={16}>{scanStatus?.data?.current_file_info?.dir_path}</Col>
+        </Row>
+        <Row>
           <Col span={8}>当前文件：</Col>
-          <Col span={16}>{scanStatus?.data?.current_file_info?.file_path}</Col>
+          <Col span={16}>{scanStatus?.data?.current_file_info?.file_name}</Col>
+        </Row>
+        <Row>
+          <Col span={8}>文件大小：</Col>
+          <Col span={16}>{scanStatus?.data?.current_file_info?.inode_info.size}</Col>
         </Row>
 
       </Card>

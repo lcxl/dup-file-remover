@@ -186,6 +186,19 @@ async fn scan_file(
         scan_version,
         Local::now(),
     )?;
+    if let Some(min_file_size) = scan_request.min_file_size {
+        if file_info.inode_info.size < min_file_size {
+            debug!("Skipping file '{:?}' due to size below minimum", file_path);
+            return Ok(());
+        }
+    }
+
+    if let Some(max_file_size) = scan_request.max_file_size {
+        if file_info.inode_info.size > max_file_size {
+            debug!("Skipping file '{:?}' due to size above maximum", file_path);
+            return Ok(());
+        }
+    }
 
     {
         let mut status = scan_status.lock().await;
@@ -194,27 +207,28 @@ async fn scan_file(
         status.current_file_info = Some(file_info.clone());
     }
     let get_file_result = db.get_file_by_path(&file_info.dir_path, &file_info.file_name);
-    if get_file_result.is_ok() {
-        // check file update time and update if necessary
-        let db_file_info = get_file_result.unwrap();
-        if db_file_info.inode_info == file_info.inode_info {
-            debug!(
+    match get_file_result {
+        Ok(db_file_info) => {
+            if db_file_info.inode_info == file_info.inode_info {
+                debug!(
                 "File '{}' already exists and is same in database, update version from {} to {}",
                 file_info.file_path, db_file_info.version, file_info.version
             );
-            db.update_version(&file_info)?;
-            return Ok(());
-        } else {
-            info!("File '{}' is changed, need to update", file_info.file_path);
+                db.update_version(&file_info)?;
+                return Ok(());
+            } else {
+                info!("File '{}' is changed, need to update", file_info.file_path);
+            }
         }
-    } else {
-        info!(
-            "File '{}' not found in database, or error: {:?}",
-            file_info.file_path,
-            get_file_result.err().unwrap()
-        );
-        info!("Add new file '{}' to db", file_info.file_path);
+        Err(error) => {
+            info!(
+                "File '{}' not found in database, or error: {:?}",
+                file_info.file_path, error
+            );
+            info!("Add new file '{}' to db", file_info.file_path);
+        }
     }
+
     // update file md5 and insert into db
     file_info.update_md5()?;
     db.insert_file_info(&file_info)?;

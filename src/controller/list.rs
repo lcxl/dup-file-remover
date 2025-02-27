@@ -21,11 +21,11 @@ pub async fn list_files(
 ) -> Result<HttpResponse, AWError> {
     let conn = db.get_ref();
     let result = conn.0.list_files(&query_list);
-    if result.is_err() {
-        return Ok(HttpResponse::Ok().json(RestResponse::failed(
+    match result {
+        Ok(file_info_list) => Ok(HttpResponse::Ok().json(file_info_list)),
+        Err(e) => Ok(HttpResponse::Ok().json(RestResponse::failed(
             ErrorCode::UNKNOWN_ERROR,
-            result.err().unwrap().to_string(),
-        )));
+            e.to_string(),
+        ))),
     }
-    Ok(HttpResponse::Ok().json(result.unwrap()))
 }

@@ -92,6 +92,7 @@ const TableList: React.FC = () => {
       title: <FormattedMessage id="pages.searchTable.fileExtentionList" defaultMessage="文件后缀名列表" />,
       dataIndex: ["file_info", "file_extension"],
       hideInForm: true,
+      hideInDescriptions: true,
       hideInTable: true,
       renderFormItem: (item, { type, defaultRender, ...rest }, form) => {
         const options: SelectProps['options'] = [];
@@ -151,8 +152,26 @@ const TableList: React.FC = () => {
     {
       title: <FormattedMessage id="pages.searchTable.fileMd5" defaultMessage="File md5" />,
       dataIndex: ['file_info', "inode_info", "md5"],
-      hideInForm: true,
+      //hideInForm: true,
       valueType: 'text',
+    },
+    {
+      title: <FormattedMessage id="pages.searchTable.fileSize" defaultMessage="File size" />,
+      dataIndex: ['file_info', "inode_info", "size"],
+      renderText: (val: number) => {
+        if (val < 2 ** 10) {
+          return `${val} Bytes`;
+        } else if (val < 2 ** 20) {
+          return `${(val / (2 ** 10)).toFixed(2)} KB`;
+        } else if (val < 2 ** 30) {
+          return `${(val / (2 ** 20)).toFixed(2)} MB`;
+        } else if (val < 2 ** 40) {
+          return `${(val / (2 ** 30)).toFixed(2)} GB`;
+        } else {
+          return `${(val / (2 ** 40)).toFixed(2)} TB`;
+        }
+      }
+      ,
     },
     {
       title: (
@@ -193,6 +212,7 @@ const TableList: React.FC = () => {
         />
       ),
       hideInTable: true,
+      hideInDescriptions: true,
       dataIndex: ["file_info", "inode_info", "modified"],
       valueType: 'dateTimeRange',
     },
@@ -205,6 +225,7 @@ const TableList: React.FC = () => {
         />
       ),
       hideInTable: true,
+      hideInDescriptions: true,
       dataIndex: ["md5_count"],
       valueType: 'digitRange',
       initialValue: [2, null],

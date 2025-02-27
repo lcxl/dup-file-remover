@@ -111,8 +111,8 @@ pub fn run() -> Result<Server, DfrError> {
 
     let secret_key = Key::generate();
 
-    let database_manager = PoolDatabaseManager::new("dfremover.db").unwrap();
-    database_manager.create_tables().unwrap();
+    let database_manager = PoolDatabaseManager::new("dfremover.db")?;
+    database_manager.create_tables()?;
     let _settings = settings.clone();
     // create shared scan status for scan progress tracking
     let scan_status_data = web::Data::new(SharedScanStatus::new());

@@ -32,7 +32,7 @@ pub struct PoolDatabaseManager(pub Arc<DatabaseManager>);
 
 impl PoolDatabaseManager {
     pub fn new(path: &str) -> Result<Self> {
-        let mgr = Arc::new(DatabaseManager::new(path).unwrap());
+        let mgr = Arc::new(DatabaseManager::new(path)?);
         Ok(PoolDatabaseManager(mgr))
     }
 }
@@ -474,6 +474,9 @@ impl DatabaseManager {
             Ok(count)
         });
         // get total count
+        // FIXME thread 'actix-rt|system:0|arbiter:4' panicked at src/database/sqlite.rs:477:55:
+        // called `Result::unwrap()` on an `Err` value: SqliteFailure(Error { code: DatabaseBusy, extended_code: 5 }, Some("database is locked"))
+        // note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
         let total_count = count_iter?.next().unwrap().unwrap();
 
         let mut stmt = trans.prepare(&sql)?;

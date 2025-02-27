@@ -66,6 +66,7 @@ export default {
   'pages.searchTable.batchApproval': '批量审批',
   'pages.searchTable.fileModifiedTime': '文件修改时间',
   'pages.searchTable.fileMd5': '文件MD5',
+  'pages.searchTable.fileSize': '文件大小',
   'pages.searchTable.fileExtention': '文件后缀名',
   'pages.searchTable.fileExtentionList': '文件后缀名列表',
   'pages.searchTable.searchMd5Count': '重复项范围',
