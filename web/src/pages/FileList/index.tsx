@@ -86,6 +86,7 @@ const TableList: React.FC = () => {
       dataIndex: ["file_info", "file_extension"],
       hideInForm: true,
       hideInTable: true,
+      hideInSearch: true,
     },
     {
       key: 'file_extention_list',
@@ -143,6 +144,7 @@ const TableList: React.FC = () => {
       dataIndex: 'md5_count',
       sorter: true,
       hideInForm: true,
+      hideInSearch: true,
       renderText: (val: string) =>
         `${val}${intl.formatMessage({
           id: 'pages.searchTable.tenThousand',
@@ -158,6 +160,7 @@ const TableList: React.FC = () => {
     {
       title: <FormattedMessage id="pages.searchTable.fileSize" defaultMessage="File size" />,
       dataIndex: ['file_info', "inode_info", "size"],
+      hideInSearch: true,
       renderText: (val: number) => {
         if (val < 2 ** 10) {
           return `${val} Bytes`;
@@ -182,6 +185,7 @@ const TableList: React.FC = () => {
       ),
       sorter: true,
       hideInSearch: true,
+      hideInTable: true,
       dataIndex: ["file_info", "scan_time"],
       valueType: 'dateTime',
       renderFormItem: (item, { defaultRender, ...rest }, form) => {
@@ -215,6 +219,20 @@ const TableList: React.FC = () => {
       hideInDescriptions: true,
       dataIndex: ["file_info", "inode_info", "modified"],
       valueType: 'dateTimeRange',
+    },
+    {
+      key: 'search_file_size',
+      title: (
+        <FormattedMessage
+          id="pages.searchTable.searchFileSize"
+          defaultMessage="File size range"
+        />
+      ),
+      hideInTable: true,
+      hideInDescriptions: true,
+      dataIndex: ['file_info', "inode_info", "size"],
+      valueType: 'digitRange',
+      //initialValue: [2, null],
     },
     {
       key: 'search_md5_count',
@@ -260,6 +278,7 @@ const TableList: React.FC = () => {
         search_file_modified_time?: string[];
         search_md5_count?: number[];
         file_extention_list?: string[];
+        search_file_size?: number[];
       }>
         headerTitle={intl.formatMessage({
           id: 'pages.searchTable.title',
@@ -292,6 +311,7 @@ const TableList: React.FC = () => {
             search_file_modified_time?: string[];
             search_md5_count?: number[];
             file_extention_list?: string[];
+            search_file_size?: number[];
           },
           sort,
           filter,
@@ -326,6 +346,10 @@ const TableList: React.FC = () => {
           }
           if (params.file_extention_list && params.file_extention_list.length > 0) {
             list_param.file_extension_list = params.file_extention_list.join(',');
+          }
+          if (params.search_file_size) {
+            list_param.min_file_size = params.search_file_size[0];
+            list_param.max_file_size = params.search_file_size[1];
           }
 
           const msg = await listFiles(list_param);

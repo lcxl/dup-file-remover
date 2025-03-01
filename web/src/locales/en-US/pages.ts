@@ -73,4 +73,5 @@ export default {
   'pages.searchTable.fileExtention': 'File extension',
   'pages.searchTable.fileExtentionList': 'File extension list',
   'pages.searchTable.searchMd5Count': 'File md5 count range',
+  'pages.searchTable.searchFileSize': 'File size range',
 };
