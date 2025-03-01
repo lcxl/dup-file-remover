@@ -53,7 +53,15 @@ impl Deref for PoolDatabaseManager {
 
 impl DatabaseManager {
     pub fn new(path: &str) -> Result<Self> {
-        let manager = SqliteConnectionManager::file(path);
+        let manager = SqliteConnectionManager::file(path).with_init(|c| {
+            // enable WAL mode for better performance and concurrency support
+            c.pragma_update(None, "journal_mode", "WAL")?;
+            // set busy timeout to 5 seconds to avoid locking issues during concurrent access
+            c.pragma_update(None, "busy_timeout", "5000")?;
+            // set synchronous mode to NORMAL for better performance
+            c.pragma_update(None, "synchronous", "NORMAL")?;
+            Ok(())
+        });
         let pool = Pool::new(manager).unwrap();
 
         Ok(Self { pool })
