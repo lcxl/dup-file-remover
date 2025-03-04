@@ -1,6 +1,6 @@
 ARG DFREMOVER_DEBUG_VERSION=false
 # Build stage
-FROM rust:1.84.1 as rust-builder
+FROM rust:1.84.1 AS rust-builder
 WORKDIR /usr/src/dfr
 COPY . .
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
@@ -8,7 +8,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,sharing=private,target=/usr/src/dfr/target \
     cargo install --locked --path .
 
-FROM node:20 as node-builder
+FROM node:20 AS node-builder
 WORKDIR /usr/src/dfr/web
 COPY web .
 RUN --mount=type=cache,target=/root/.npm \
