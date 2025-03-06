@@ -1,10 +1,10 @@
-use std::{ops::Deref, sync::Arc};
+use std::{fs, ops::Deref, path::PathBuf, sync::Arc};
 
 use chrono::{DateTime, Local};
 use log::{error, info};
 use rusqlite::{params_from_iter, Connection, Params, Result, ToSql};
 
-use crate::model::list::QueryListParams;
+use crate::{model::list::QueryListParams, utils::error::DfrError};
 
 use super::file_info::{FileInfo, FileInfoList, FileInfoWithMd5Count, InodeInfo};
 use r2d2_sqlite::SqliteConnectionManager;
@@ -31,7 +31,7 @@ pub struct DatabaseManager {
 pub struct PoolDatabaseManager(pub Arc<DatabaseManager>);
 
 impl PoolDatabaseManager {
-    pub fn new(path: &str) -> Result<Self> {
+    pub fn new(path: &str) -> Result<Self, DfrError> {
         let mgr = Arc::new(DatabaseManager::new(path)?);
         Ok(PoolDatabaseManager(mgr))
     }
@@ -52,7 +52,14 @@ impl Deref for PoolDatabaseManager {
 }
 
 impl DatabaseManager {
-    pub fn new(path: &str) -> Result<Self> {
+    pub fn new(path: &str) -> Result<Self, DfrError> {
+        let path_buf = PathBuf::from(path);
+        if let Some(parent_path) = path_buf.parent() {
+            if !parent_path.exists() {
+                info!("Creating database directory: {:?}", parent_path);
+                fs::create_dir_all(parent_path)?;
+            }
+        }
         let manager = SqliteConnectionManager::file(path).with_init(|c| {
             // enable WAL mode for better performance and concurrency support
             c.pragma_update(None, "journal_mode", "WAL")?;

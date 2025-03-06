@@ -19,7 +19,7 @@ fn test_create_sqlite() -> Result<(), DfrError> {
 }
 
 #[test]
-fn test_list_files() -> Result<(), Box<dyn std::error::Error>> {
+fn test_list_files() -> Result<(), DfrError> {
     let database_manager = PoolDatabaseManager::new("dfremover.db")?;
     let query_list_params = QueryListParams {
         page_no: 1,

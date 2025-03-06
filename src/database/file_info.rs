@@ -73,8 +73,15 @@ impl FileInfo {
         if file_path.extension().is_none() {
             file_extension = Option::None;
         } else {
-            file_extension =
-                Option::Some(file_path.extension().unwrap().to_string_lossy().to_string());
+            // convert to lowercase for consistency
+            file_extension = Option::Some(
+                file_path
+                    .extension()
+                    .unwrap()
+                    .to_string_lossy()
+                    .to_string()
+                    .to_lowercase(),
+            );
         }
         let created = DateTime::<Local>::from(metadata.created()?);
         let modified = DateTime::<Local>::from(metadata.modified()?);

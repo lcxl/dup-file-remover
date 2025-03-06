@@ -1,6 +1,7 @@
 import { queryScanStatus } from '@/services/dfr/queryScanStatus';
 import { startScan } from '@/services/dfr/startScan';
 import { stopScan } from '@/services/dfr/stopScan';
+import { formatSize } from '@/utils/format_utils';
 import { HeartTwoTone, SmileTwoTone } from '@ant-design/icons';
 import { PageContainer, ProForm, ProFormDigit, ProFormInstance, ProFormSelect, ProFormText } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
@@ -85,7 +86,7 @@ const Admin: React.FC = () => {
         </Row>
         <Row>
           <Col span={8}>文件大小：</Col>
-          <Col span={16}>{scanStatus?.data?.current_file_info?.inode_info.size}</Col>
+          <Col span={16}>{formatSize(scanStatus?.data?.current_file_info?.inode_info.size)}</Col>
         </Row>
 
       </Card>
@@ -135,6 +136,10 @@ const Admin: React.FC = () => {
                 { label: 'bmp图片', value: 'bmp' },
                 { label: 'png图片', value: 'png' },
                 { label: 'heic图片', value: 'heic' },
+                { label: 'mp4视频', value: 'mp4' },
+                { label: 'avi视频', value: 'avi' },
+                { label: 'mov视频', value: 'mov' },
+                { label: 'pdf文件', value: 'pdf' },
               ];
             }}
           />

@@ -48,6 +48,8 @@ pub struct Args {
 #[derive(Clone, Debug, Deserialize)]
 #[serde(default)]
 pub struct Settings {
+    /// Path to the database file. If not specified, a new one will be created in the "conf" directory.
+    pub db_path: String,
     /// Enable IPv6 support
     pub enable_ipv6: bool,
     /// port number for the server to bind to
@@ -67,6 +69,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            db_path: "conf/dfremover.db".to_string(),
             enable_ipv6: true,
             port: 8081,
             listen_addr_ipv4: "0.0.0.0".to_string(),
@@ -83,14 +86,14 @@ impl Settings {
         let config_file_path = PathBuf::from(args.config_file_path.as_str());
         info!("Loading config file from: {}", config_file_path.display());
         // Load settings from config file
-        Config::builder()
+        let config = Config::builder()
             .add_source(
                 File::with_name(config_file_path.to_string_lossy().to_string().as_str())
                     .required(false),
             )
             .add_source(Environment::with_prefix("DFR"))
-            .build()?
-            .try_deserialize::<Settings>()
+            .build()?;
+        config.try_deserialize::<Settings>()
     }
 }
 
@@ -111,7 +114,7 @@ pub fn run() -> Result<Server, DfrError> {
 
     let secret_key = Key::generate();
 
-    let database_manager = PoolDatabaseManager::new("dfremover.db")?;
+    let database_manager = PoolDatabaseManager::new(&settings.db_path)?;
     database_manager.create_tables()?;
     let _settings = settings.clone();
     // create shared scan status for scan progress tracking

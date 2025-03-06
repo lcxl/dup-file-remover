@@ -71,4 +71,5 @@ export default {
   'pages.searchTable.fileExtentionList': '文件后缀名列表',
   'pages.searchTable.searchMd5Count': '重复项范围',
   'pages.searchTable.searchFileSize': '文件大小范围',
+  'pages.searchTable.startSearch': '开始扫描',
 };

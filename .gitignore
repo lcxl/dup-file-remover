@@ -154,3 +154,5 @@ dist
 
 *.db
 *.db-*
+
+conf/

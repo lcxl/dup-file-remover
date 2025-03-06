@@ -1,5 +1,6 @@
 import { addRule, removeRule } from '@/services/ant-design-pro/rule';
 import { listFiles } from '@/services/dfr/listFiles';
+import { formatSize } from '@/utils/format_utils';
 import { SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns, ProDescriptionsItemProps } from '@ant-design/pro-components';
 import {
@@ -162,6 +163,8 @@ const TableList: React.FC = () => {
       dataIndex: ['file_info', "inode_info", "size"],
       hideInSearch: true,
       renderText: (val: number) => {
+        return formatSize(val);
+        
         if (val < 2 ** 10) {
           return `${val} Bytes`;
         } else if (val < 2 ** 20) {
@@ -295,10 +298,10 @@ const TableList: React.FC = () => {
             key="primary"
             onClick={() => {
               // 转到欢迎页面
-              history.push('/welcome');
+              history.push('/admin');
             }}
           >
-            <SearchOutlined /> <FormattedMessage id="pages.searchTable.new" defaultMessage="New" />
+            <SearchOutlined /> <FormattedMessage id="pages.searchTable.startSearch" defaultMessage="Start search" />
           </Button>,
         ]}
         request={async (
@@ -345,7 +348,7 @@ const TableList: React.FC = () => {
             list_param.max_md5_count = params.search_md5_count[1];
           }
           if (params.file_extention_list && params.file_extention_list.length > 0) {
-            list_param.file_extension_list = params.file_extention_list.join(',');
+            list_param.file_extension_list = params.file_extention_list.join(',').toLowerCase();
           }
           if (params.search_file_size) {
             list_param.min_file_size = params.search_file_size[0];
