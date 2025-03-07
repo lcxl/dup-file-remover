@@ -21,5 +21,5 @@ FROM debian:bookworm-slim
 COPY --from=node-builder /usr/src/dfr/web/dist /app/static
 # Copy the dup-file-remover binary from the rust-builder stage
 COPY --from=rust-builder /usr/local/cargo/bin/dup-file-remover /app/dup-file-remover
-WORKDIR /app/data
+WORKDIR /app
 CMD ["/app/dup-file-remover"]

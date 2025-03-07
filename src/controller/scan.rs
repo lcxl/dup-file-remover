@@ -7,6 +7,7 @@ use crate::database::sqlite::PoolDatabaseManager;
 use crate::model::common::{ErrorCode, RestResponse};
 use crate::model::scan::{ScanRequest, ScanStatus, SharedScanStatus};
 use crate::utils::error::DfrError;
+use crate::Settings;
 use actix_web::{get, post, web, Error as AWError, HttpResponse};
 use chrono::{DateTime, Local};
 use log::{debug, error, info, warn};
@@ -43,6 +44,7 @@ pub async fn start_scan(
     requst_json: web::Json<ScanRequest>,
     db: web::Data<PoolDatabaseManager>,
     scan_status: web::Data<SharedScanStatus>,
+    settings: web::Data<Settings>,
 ) -> Result<HttpResponse, AWError> {
     let is_scan_started = SCAN_FLAG.load(Ordering::Acquire);
     if is_scan_started {
@@ -50,7 +52,14 @@ pub async fn start_scan(
         return Ok(HttpResponse::Conflict().body("Scan already in progress"));
     }
     let scan_request = requst_json.into_inner();
-    let path = Path::new(&scan_request.scan_path);
+    let path;
+    if scan_request.scan_path.len() == 0 || scan_request.scan_path.trim().len() == 0 {
+        // Use default scan path if no path is provided
+        path = Path::new(settings.default_scan_path.as_str());
+    } else {
+        path = Path::new(&scan_request.scan_path);
+    }
+    
     if !path.exists() {
         return Ok(HttpResponse::Ok().json(RestResponse::failed(
             ErrorCode::FILE_PATH_NOT_FOUND,

@@ -64,6 +64,8 @@ pub struct Settings {
     pub login_user_name: String,
     /// login password
     pub login_password: String,
+    /// default scan path for the server to start with
+    pub default_scan_path: String,
 }
 
 impl Default for Settings {
@@ -77,6 +79,7 @@ impl Default for Settings {
             log_level: "debug".to_string(),
             login_user_name: "admin".to_string(),
             login_password: "password".to_string(),
+            default_scan_path: "data".to_string(),
         }
     }
 }
