@@ -1,4 +1,4 @@
 pub mod scan;
-pub mod list;
+pub mod files;
 pub mod login;
 pub mod user;

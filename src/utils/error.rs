@@ -1,5 +1,7 @@
 use std::fmt::{self, Display};
 
+use actix_web::ResponseError;
+
 /// Custom error type for the application.
 #[derive(Debug)]
 pub enum DfrError {
@@ -11,6 +13,8 @@ pub enum DfrError {
     RusqliteError(rusqlite::Error),
     /// A configuration error occurred.
     ConfigError(config::ConfigError),
+    /// A TOML edit error occurred.
+    TomlEditError(toml_edit::TomlError),
 }
 
 impl Display for DfrError {
@@ -20,6 +24,7 @@ impl Display for DfrError {
             DfrError::JsonError(error) => error.fmt(f),
             DfrError::RusqliteError(error) => error.fmt(f),
             DfrError::ConfigError(config_error) => config_error.fmt(f),
+            DfrError::TomlEditError(toml_error) => toml_error.fmt(f),
         }
     }
 }
@@ -47,3 +52,11 @@ impl From<config::ConfigError> for DfrError {
         DfrError::ConfigError(err)
     }
 }
+
+impl From<toml_edit::TomlError> for DfrError {
+    fn from(err: toml_edit::TomlError) -> Self {
+        DfrError::TomlEditError(err)
+    }
+}
+
+impl ResponseError for DfrError {}

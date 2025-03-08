@@ -1,7 +1,7 @@
 use chrono::Local;
 use dup_file_remover::{
     database::{file_info::FileInfo, sqlite::PoolDatabaseManager},
-    model::list::QueryListParams,
+    model::files::QueryListParams,
     utils::error::DfrError,
 };
 

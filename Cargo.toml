@@ -27,3 +27,4 @@ utoipa-scalar = { version="0.3", features = ["actix-web"] }
 config = { version="0.15", features = ["toml"]}
 clap = {version = "4.5", features = ["derive"]}
 actix-session = { version = "0.10", features = ["cookie-session"] }
+toml_edit = {version = "0.22", features = ["serde"]}

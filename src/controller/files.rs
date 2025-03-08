@@ -1,10 +1,11 @@
-use actix_web::{get, web, Error as AWError, HttpResponse};
+use actix_web::{delete, get, web, Error as AWError, HttpResponse};
+use log::info;
 
 use crate::{
     database::{file_info::FileInfoList, sqlite::PoolDatabaseManager},
     model::{
         common::{ErrorCode, RestResponse},
-        list::QueryListParams,
+        files::{DeleteFileRequest, QueryListParams},
     },
 };
 #[utoipa::path(
@@ -28,4 +29,21 @@ pub async fn list_files(
             e.to_string(),
         ))),
     }
+}
+
+#[utoipa::path(
+    summary = "Delete a file",
+    responses(
+        (status = 200, description = "Delete file successfully"),
+        (status = 400, description = "Bad request"),
+        (status = 501, description = "Not implemented"),
+    ),
+)]
+#[delete("file")]
+pub async fn delete_file(
+    requst_json: web::Json<DeleteFileRequest>,
+) -> Result<HttpResponse, AWError> {
+    let delete_file_request = requst_json.into_inner();
+    info!("Delete file {} successfully", delete_file_request.file_path);
+    Ok(HttpResponse::Ok().finish())
 }

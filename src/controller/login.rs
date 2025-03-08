@@ -4,8 +4,8 @@ use log::{error, info};
 
 use crate::{
     controller::user::SESSION_KEY_USERNAME,
-    model::login::{FakeCaptcha, FakeCaptchaParams, LoginParams, LoginResult},
-    Settings,
+    model::login::{FakeCaptcha, FakeCaptchaParams, LoginParams, LoginResult, PasswordParams},
+    SharedSettings,
 };
 
 #[utoipa::path(
@@ -19,17 +19,20 @@ use crate::{
 #[post("/api/login/account")]
 pub async fn login_account(
     requst_json: web::Json<LoginParams>,
-    settings: web::Data<Settings>,
+    settings: web::Data<SharedSettings>,
     session: Session,
 ) -> Result<HttpResponse, AWError> {
     let params = requst_json.into_inner();
-    if settings.login_user_name != params.username {
-        error!("Username does not match");
-        return Ok(HttpResponse::Forbidden().body("Illegal username or password"));
-    }
-    if settings.login_password != params.password {
-        error!("Password does not match");
-        return Ok(HttpResponse::Forbidden().body("Illegal username or password"));
+    {
+        let settings = settings.lock().await;
+        if settings.login_user_name != params.username {
+            error!("Username does not match");
+            return Ok(HttpResponse::Forbidden().body("Illegal username or password"));
+        }
+        if settings.login_password != params.password {
+            error!("Password does not match");
+            return Ok(HttpResponse::Forbidden().body("Illegal username or password"));
+        }
     }
     let result = LoginResult {
         status: String::from("ok"),
@@ -76,4 +79,39 @@ pub async fn logout_account(session: Session) -> Result<HttpResponse, AWError> {
     Ok(HttpResponse::Ok().finish())
 }
 
+#[utoipa::path(
+    summary = "Change password of user account",
+    request_body(content = LoginParams),
+    responses(
+        (status = 200, description = "Login result", body=LoginResult),
+        (status = 403, description = "Illegal username or password"),
+    ),
+)]
+#[post("/api/login/password")]
+pub async fn change_password(
+    requst_json: web::Json<PasswordParams>,
+    settings: web::Data<SharedSettings>,
+    session: Session,
+) -> Result<HttpResponse, AWError> {
+    let params = requst_json.into_inner();
+    let mut settings = settings.lock().await;
+    if settings.login_user_name != params.username {
+        error!("Username does not match");
+        return Ok(HttpResponse::Forbidden().body("Illegal username or password"));
+    }
+    if settings.login_password != params.password {
+        error!("Password does not match");
+        return Ok(HttpResponse::Forbidden().body("Illegal username or password"));
+    }
+    settings.login_user_name = params
+        .new_username
+        .unwrap_or_else(|| params.username.clone());
+    settings.login_password = params.new_password;
+    // save new settings to file
+    settings.save()?;
+    info!("Password changed successfully");
 
+    // logout
+    session.remove(SESSION_KEY_USERNAME);
+    Ok(HttpResponse::Ok().finish())
+}

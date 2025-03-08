@@ -59,7 +59,7 @@ pub async fn start_scan(
     } else {
         path = Path::new(&scan_request.scan_path);
     }
-    
+
     if !path.exists() {
         return Ok(HttpResponse::Ok().json(RestResponse::failed(
             ErrorCode::FILE_PATH_NOT_FOUND,
@@ -229,13 +229,21 @@ async fn scan_file(
                 info!("File '{}' is changed, need to update", file_info.file_path);
             }
         }
-        Err(error) => {
-            info!(
-                "File '{}' not found in database, or error: {:?}",
-                file_info.file_path, error
-            );
-            info!("Add new file '{}' to db", file_info.file_path);
-        }
+        Err(error) => match error {
+            rusqlite::Error::QueryReturnedNoRows => {
+                debug!(
+                    "File '{}' not found in database, add it",
+                    file_info.file_path
+                );
+            }
+            _ => {
+                error!(
+                    "Error querying file {} in database: {:?}",
+                    file_info.file_path, error
+                );
+                return Err(DfrError::RusqliteError(error));
+            }
+        },
     }
 
     // update file md5 and insert into db

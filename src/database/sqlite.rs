@@ -4,7 +4,7 @@ use chrono::{DateTime, Local};
 use log::{error, info};
 use rusqlite::{params_from_iter, Connection, Params, Result, ToSql};
 
-use crate::{model::list::QueryListParams, utils::error::DfrError};
+use crate::{model::files::QueryListParams, utils::error::DfrError};
 
 use super::file_info::{FileInfo, FileInfoList, FileInfoWithMd5Count, InodeInfo};
 use r2d2_sqlite::SqliteConnectionManager;

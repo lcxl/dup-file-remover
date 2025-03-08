@@ -7,32 +7,39 @@ pub struct LoginParams {
     pub username: String,
     pub password: String,
     #[serde(rename(deserialize = "autoLogin"))]
-    #[schema(rename="autoLogin")]
+    #[schema(rename = "autoLogin")]
     pub auto_login: bool,
     #[serde(rename(deserialize = "type"))]
-    #[schema(rename="type")]
+    #[schema(rename = "type")]
     pub login_type: String,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct FakeCaptchaParams {
-   pub phone: Option<String>,
+    pub phone: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
 pub struct FakeCaptcha {
-  pub code: Option<u32>,
-  pub status: Option<String>,
+    pub code: Option<u32>,
+    pub status: Option<String>,
 }
-
 
 #[derive(Serialize, ToSchema)]
 pub struct LoginResult {
     pub status: String,
     #[serde(rename(serialize = "type"))]
-    #[schema(rename="type")]
+    #[schema(rename = "type")]
     pub login_type: String,
     #[serde(rename(serialize = "currentAuthority"))]
-    #[schema(rename="currentAuthority")]
+    #[schema(rename = "currentAuthority")]
     pub current_authority: String,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct PasswordParams {
+    pub username: String,
+    pub password: String,
+    pub new_username: Option<String>,
+    pub new_password: String,
 }
