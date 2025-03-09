@@ -15,7 +15,7 @@ use actix_web::{
     App, HttpResponse, HttpServer,
 };
 use clap::Parser;
-use config::{Config, ConfigError, Environment, File};
+use config::{Config, Environment, File};
 use log::{info, warn};
 
 use controller::{

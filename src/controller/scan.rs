@@ -7,7 +7,7 @@ use crate::database::sqlite::PoolDatabaseManager;
 use crate::model::common::{ErrorCode, RestResponse};
 use crate::model::scan::{ScanRequest, ScanStatus, SharedScanStatus};
 use crate::utils::error::DfrError;
-use crate::Settings;
+use crate::SharedSettings;
 use actix_web::{get, post, web, Error as AWError, HttpResponse};
 use chrono::{DateTime, Local};
 use log::{debug, error, info, warn};
@@ -44,7 +44,7 @@ pub async fn start_scan(
     requst_json: web::Json<ScanRequest>,
     db: web::Data<PoolDatabaseManager>,
     scan_status: web::Data<SharedScanStatus>,
-    settings: web::Data<Settings>,
+    settings: web::Data<SharedSettings>,
 ) -> Result<HttpResponse, AWError> {
     let is_scan_started = SCAN_FLAG.load(Ordering::Acquire);
     if is_scan_started {
@@ -53,9 +53,12 @@ pub async fn start_scan(
     }
     let scan_request = requst_json.into_inner();
     let path;
+    let default_scan_path;
     if scan_request.scan_path.len() == 0 || scan_request.scan_path.trim().len() == 0 {
         // Use default scan path if no path is provided
-        path = Path::new(settings.default_scan_path.as_str());
+        let settings = settings.lock().await;
+        default_scan_path = settings.default_scan_path.clone();
+        path = Path::new(default_scan_path.as_str());
     } else {
         path = Path::new(&scan_request.scan_path);
     }
@@ -68,9 +71,8 @@ pub async fn start_scan(
     }
     STOP_SCAN_FLAG.store(false, Ordering::Relaxed);
     tokio::spawn(async move {
-        let result = SCAN_FLAG.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed);
-        if result.is_err() {
-            error!("Failed to acquire lock for scan, giving up");
+        if let Err(e) = SCAN_FLAG.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed) {
+            error!("Failed to acquire lock for scan, giving up, e: {}", e);
             return;
         }
 
