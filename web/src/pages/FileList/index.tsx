@@ -143,7 +143,7 @@ const TableList: React.FC = () => {
         />
       ),
       dataIndex: 'md5_count',
-      sorter: true,
+      //sorter: true,
       hideInForm: true,
       hideInSearch: true,
       renderText: (val: string) =>
@@ -162,9 +162,10 @@ const TableList: React.FC = () => {
       title: <FormattedMessage id="pages.searchTable.fileSize" defaultMessage="File size" />,
       dataIndex: ['file_info', "inode_info", "size"],
       hideInSearch: true,
+      sorter: true,
       renderText: (val: number) => {
         return formatSize(val);
-        
+
         if (val < 2 ** 10) {
           return `${val} Bytes`;
         } else if (val < 2 ** 20) {
@@ -353,6 +354,10 @@ const TableList: React.FC = () => {
           if (params.search_file_size) {
             list_param.min_file_size = params.search_file_size[0];
             list_param.max_file_size = params.search_file_size[1];
+          }
+          if (sort["file_info,inode_info,size"]) {
+            list_param.order_by = "size";
+            list_param.order_asc = sort["file_info,inode_info,size"] === 'descend' ? false : true;
           }
 
           const msg = await listFiles(list_param);

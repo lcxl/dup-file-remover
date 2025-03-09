@@ -43,7 +43,7 @@ use utoipa_swagger_ui::SwaggerUi;
 #[command(version, about, long_about = None)]
 pub struct Args {
     /// Name of the person to greet
-    #[arg(short, long, default_value = "conf/config.toml")]
+    #[arg(short, long, default_value = "conf/config")]
     config_file_path: String,
 }
 
@@ -75,7 +75,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            config_file_path: "conf/config.toml".to_string(),
+            config_file_path: "conf/config".to_string(),
             db_path: "conf/dfremover.db".to_string(),
             enable_ipv6: true,
             port: 8081,
@@ -90,13 +90,14 @@ impl Default for Settings {
 }
 
 impl Settings {
-    pub fn new(args: &Args) -> Result<Self, ConfigError> {
-        let config_file_path = PathBuf::from(args.config_file_path.as_str());
-        info!("Loading config file from: {}", config_file_path.display());
+    pub fn new(args: &Args) -> Result<Self, DfrError> {
+        //let config_file_path = PathBuf::from(args.config_file_path.as_str());
+        //let config_file_path = config_file_path.canonicalize()?;
+        info!("Loading config file from: {}", args.config_file_path.as_str());
         // Load settings from config file
         let config = Config::builder()
             .add_source(
-                File::with_name(config_file_path.to_string_lossy().to_string().as_str())
+                File::with_name(args.config_file_path.as_str())
                     .required(false),
             )
             .add_source(Environment::with_prefix("DFR"))
@@ -107,7 +108,8 @@ impl Settings {
     }
 
     pub fn save(&self) -> Result<(), DfrError> {
-        let config_file_path = PathBuf::from(self.config_file_path.as_str());
+        let mut config_file_path = PathBuf::from(self.config_file_path.as_str());
+        config_file_path.set_extension("toml");
         // Save settings to config file
         let config_context = fs::read_to_string(&config_file_path)?;
         let mut toml_doc = config_context.parse::<DocumentMut>()?;
@@ -193,7 +195,7 @@ pub fn run() -> Result<Server, DfrError> {
             .into_utoipa_app()
             .map(|app| app.wrap(Logger::default()))
             .app_data(web::Data::new(database_manager.clone()))
-            .app_data(web::Data::new(shared_settings.clone()))
+            .app_data(shared_settings.clone())
             .app_data(scan_status_data.clone())
             .app_data(
                 web::JsonConfig::default()

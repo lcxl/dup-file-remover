@@ -2,6 +2,7 @@
 /* eslint-disable */
 // API 更新时间：
 // API 唯一标识：
+import * as deleteFile from './deleteFile';
 import * as getCaptcha from './getCaptcha';
 import * as getCurrentUser from './getCurrentUser';
 import * as getNotices from './getNotices';
@@ -17,6 +18,7 @@ export default {
   startScan,
   queryScanStatus,
   stopScan,
+  deleteFile,
   loginAccount,
   getCaptcha,
   logoutAccount,

@@ -468,18 +468,39 @@ impl DatabaseManager {
             params.push(Arc::new(md5_count));
         }
 
-        let sql = String::from("SELECT a1.inode, a1.dev_id, a1.permissions, a1.nlink, a1.uid, a1.gid, a1.created, a1.modified, a1.md5, a1.size,
-            a2.dir_path, a2.file_name, a2.file_extension, a2.scan_time, a2.version, a3.md5_count ") + &query_sql +" order by a3.md5_count desc, a1.size desc
-            LIMIT ? OFFSET ?;";
         let count_sql = String::from("SELECT COUNT(*) ") + &query_sql;
         let count_params = params.to_vec();
+        info!("list file query count sql: {}", count_sql);
+
+        let mut sql = String::from("SELECT a1.inode, a1.dev_id, a1.permissions, a1.nlink, a1.uid, a1.gid, a1.created, a1.modified, a1.md5, a1.size,
+            a2.dir_path, a2.file_name, a2.file_extension, a2.scan_time, a2.version, a3.md5_count ") + &query_sql;
+
+        // order by
+        let mut order_by_list: Vec<String> = Vec::new();
+        let mut order_asc = false;
+        if let Some(_order_asc) = query_list_params.order_asc {
+            order_asc = _order_asc;
+        }
+        if let Some(order_by) = query_list_params.order_by.clone() {
+            if order_by == "size" {
+                order_by_list.push(String::from(format!(
+                    "a1.size {}",
+                    if order_asc { "asc" } else { "desc" }
+                )));
+            }
+        }
+        //order by md5_count default
+        order_by_list.push(String::from("a3.md5_count desc"));
+        sql += format!(" order by {}", order_by_list.join(",")).as_str();
+
+        //  add limit
+        sql += " LIMIT ? OFFSET ?;";
         params.push(Arc::new(query_list_params.page_count));
         params.push(Arc::new(
             (query_list_params.page_no - 1) * query_list_params.page_count,
         ));
 
         info!("list file query sql: {}", sql);
-        info!("list file query count sql: {}", count_sql);
 
         let trans = conn.transaction()?;
         let mut stmt = trans.prepare(&count_sql)?;

@@ -17,6 +17,13 @@ declare namespace API {
     userid?: any;
   };
 
+  type DeleteFileRequest = {
+    /** Whether to delete permanently or move to trash */
+    delete_permanently: boolean;
+    /** File path to be deleted */
+    file_path: string;
+  };
+
   type FakeCaptcha = {
     code?: number;
     status?: any;
@@ -111,6 +118,10 @@ declare namespace API {
     min_md5_count?: number;
     /** Max file md5 count */
     max_md5_count?: number;
+    /** Optional order by field. */
+    order_by?: any;
+    /** Optional order direction, true for ascending, false for descending. Default is descending. */
+    order_asc?: any;
   };
 
   type LoginParams = {

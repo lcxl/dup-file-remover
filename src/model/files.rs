@@ -34,6 +34,10 @@ pub struct QueryListParams {
     pub min_md5_count: Option<i64>,
     /// Max file md5 count
     pub max_md5_count: Option<i64>,
+    /// Optional order by field.
+    pub order_by: Option<String>,
+    /// Optional order direction, true for ascending, false for descending. Default is descending.
+    pub order_asc: Option<bool>,
 }
 
 impl Default for QueryListParams {
@@ -54,6 +58,8 @@ impl Default for QueryListParams {
             end_modified_time: None,
             min_md5_count: None,
             max_md5_count: None,
+            order_by: None,
+            order_asc: None,
         }
     }
 }
