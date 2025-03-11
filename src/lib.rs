@@ -18,12 +18,17 @@ use clap::Parser;
 use log::{info, warn};
 
 use controller::{
-    files::{delete_file, list_files}, login::{change_password, get_captcha, login_account, logout_account}, scan::{query_scan_status, start_scan, stop_scan}, settings::{query_settings, update_settings}, user::{get_current_user, get_notices, reject_anonymous_users}
+    files::{delete_file, list_files},
+    login::{change_password, get_captcha, login_account, logout_account},
+    scan::{query_scan_status, start_scan, stop_scan},
+    settings::{query_settings, update_settings},
+    user::{get_current_user, get_notices, reject_anonymous_users},
 };
 use database::sqlite::PoolDatabaseManager;
 use model::{
     common::{ErrorCode, RestResponse},
-    scan::SharedScanStatus, settings::{Args, Settings},
+    scan::SharedScanStatus,
+    settings::{Args, Settings},
 };
 use tokio::sync::Mutex;
 use utils::{error::DfrError, network::check_ipv6_available};
@@ -32,7 +37,6 @@ use utoipa_rapidoc::RapiDoc;
 use utoipa_redoc::{Redoc, Servable as _};
 use utoipa_scalar::{Scalar, Servable as _};
 use utoipa_swagger_ui::SwaggerUi;
-
 
 pub struct SharedSettings(pub Mutex<Settings>);
 
