@@ -183,6 +183,22 @@ declare namespace API {
     success: boolean;
   };
 
+  type RestResponseSettingsModel = {
+    code: number;
+    data?: {
+      config_file_path: string;
+      db_path: string;
+      default_scan_path: string;
+      enable_ipv6: boolean;
+      listen_addr_ipv4: string;
+      listen_addr_ipv6: string;
+      log_level: string;
+      port: number;
+    };
+    message?: any;
+    success: boolean;
+  };
+
   type ScanRequest = {
     /** Optional list of file extensions to include in the scan. If not provided, all files will be scanned. */
     include_file_extensions?: any;
@@ -203,6 +219,25 @@ declare namespace API {
     start_time?: any;
     /** Indicates whether the scan has started. */
     started: boolean;
+  };
+
+  type SettingsModel = {
+    /** Path to the configuration file. If not specified, a new one will be created in the "conf" directory. */
+    config_file_path: string;
+    /** Path to the database file. If not specified, a new one will be created in the "conf" directory. */
+    db_path: string;
+    /** default scan path for the server to start with */
+    default_scan_path: string;
+    /** Enable IPv6 support */
+    enable_ipv6: boolean;
+    /** listen ipv4 address for the server to bind to */
+    listen_addr_ipv4: string;
+    /** listen ipv6 address for the server to bind to */
+    listen_addr_ipv6: string;
+    /** access logs are printed with the INFO level so ensure it is enabled by default */
+    log_level: string;
+    /** port number for the server to bind to */
+    port: number;
   };
 
   type UserResponeCurrentUser = {

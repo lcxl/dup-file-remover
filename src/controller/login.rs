@@ -83,7 +83,7 @@ pub async fn logout_account(session: Session) -> Result<HttpResponse, AWError> {
     summary = "Change password of user account",
     request_body(content = LoginParams),
     responses(
-        (status = 200, description = "Login result", body=LoginResult),
+        (status = 200, description = "Change password successful"),
         (status = 403, description = "Illegal username or password"),
     ),
 )]

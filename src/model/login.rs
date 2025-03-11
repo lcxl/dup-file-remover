@@ -25,6 +25,7 @@ pub struct FakeCaptcha {
     pub status: Option<String>,
 }
 
+/// Login result
 #[derive(Serialize, ToSchema)]
 pub struct LoginResult {
     pub status: String,
@@ -35,11 +36,15 @@ pub struct LoginResult {
     #[schema(rename = "currentAuthority")]
     pub current_authority: String,
 }
-
+/// Password params
 #[derive(Deserialize, ToSchema)]
 pub struct PasswordParams {
+    /// Old username
     pub username: String,
+    /// Old password
     pub password: String,
+    /// New username (optional)
     pub new_username: Option<String>,
+    /// New password
     pub new_password: String,
 }

@@ -1,4 +1,4 @@
-import { outLogin } from '@/services/ant-design-pro/login';
+import { logoutAccount } from '@/services/dfr/logoutAccount';
 import { LogoutOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
 import { history, useModel } from '@umijs/max';
 import { Spin } from 'antd';
@@ -43,7 +43,7 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ menu, childre
    * 退出登录，并且将当前的 url 保存
    */
   const loginOut = async () => {
-    await outLogin();
+    await logoutAccount();
     const { search, pathname } = window.location;
     const urlParams = new URL(window.location.href).searchParams;
     /** 此方法会跳转到 redirect 参数所在的位置 */
@@ -65,14 +65,20 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ menu, childre
   const onMenuClick = useCallback(
     (event: MenuInfo) => {
       const { key } = event;
-      if (key === 'logout') {
-        flushSync(() => {
-          setInitialState((s) => ({ ...s, currentUser: undefined }));
-        });
-        loginOut();
-        return;
+      switch (key) {
+        case 'logout':
+          flushSync(() => {
+            setInitialState((s) => ({ ...s, currentUser: undefined }));
+          });
+          loginOut();
+          break;
+        case 'settings':
+          history.push(`/account/settings`);
+          break;
+        default:
+          history.push(`/account/${key}`);
+          break;
       }
-      history.push(`/account/${key}`);
     },
     [setInitialState],
   );
@@ -102,11 +108,12 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ menu, childre
   const menuItems = [
     ...(menu
       ? [
-          {
+         /* {
             key: 'center',
             icon: <UserOutlined />,
             label: '个人中心',
           },
+          */
           {
             key: 'settings',
             icon: <SettingOutlined />,

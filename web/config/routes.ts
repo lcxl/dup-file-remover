@@ -45,17 +45,41 @@ export default [
       },
     ],
   },
+  /*
   {
     name: 'list.table-list',
     icon: 'table',
     path: '/list',
     component: './TableList',
   },
+  */
   {
     name: 'list.file-list',
     icon: 'table',
     path: '/filelist',
     component: './FileList',
+  },
+  {
+    path: '/account',
+    name: 'account',
+    icon: 'user',
+    routes: [
+      {
+        path: '/account',
+        redirect: '/account/settings',
+      },
+      {
+        path: '/account/settings',
+        name: 'settings',
+        component: './User/Settings',
+      },
+    ],
+  },
+  {
+    name: 'system.settings',
+    icon: 'setting',
+    path: '/system/settings',
+    component: './System/Settings',
   },
   {
     path: '/',

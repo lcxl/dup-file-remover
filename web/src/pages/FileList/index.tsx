@@ -1,5 +1,5 @@
-import { addRule, removeRule } from '@/services/ant-design-pro/rule';
 import { listFiles } from '@/services/dfr/listFiles';
+import { deleteFile } from '@/services/dfr/deleteFile';
 import { formatSize } from '@/utils/format_utils';
 import { SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns, ProDescriptionsItemProps } from '@ant-design/pro-components';
@@ -27,9 +27,12 @@ const handleRemove = async (selectedRows: API.FileInfoWithMd5Count[]) => {
   const hide = message.loading('正在删除');
   if (!selectedRows) return true;
   try {
-    await removeRule({
-      key: selectedRows.map((row) => row.md5_count),
-    });
+    const request: API.DeleteFileRequest = {
+      delete_permanently: false,
+      file_path: "xxx",
+    };
+    //FIXME
+    await deleteFile(request);
     hide();
     message.success('Deleted successfully and will refresh soon');
     return true;
@@ -165,18 +168,6 @@ const TableList: React.FC = () => {
       sorter: true,
       renderText: (val: number) => {
         return formatSize(val);
-
-        if (val < 2 ** 10) {
-          return `${val} Bytes`;
-        } else if (val < 2 ** 20) {
-          return `${(val / (2 ** 10)).toFixed(2)} KB`;
-        } else if (val < 2 ** 30) {
-          return `${(val / (2 ** 20)).toFixed(2)} MB`;
-        } else if (val < 2 ** 40) {
-          return `${(val / (2 ** 30)).toFixed(2)} GB`;
-        } else {
-          return `${(val / (2 ** 40)).toFixed(2)} TB`;
-        }
       }
       ,
     },
