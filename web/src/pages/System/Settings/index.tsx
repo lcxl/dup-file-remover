@@ -39,10 +39,9 @@ const Settings: React.FC = () => {
                         warn: 'WARN',
                         error: 'ERROR',
                     }}
-                    placeholder="Please select a country"
+                    placeholder="请指定日志级别"
                     rules={[{ required: true, message: '请指定日志级别!' }]}
                 />
-                <ProFormText name="log_level" label="日志级别" />
                 <ProFormText name="default_scan_path" label="默认扫描路径" />
             </ProForm>
         </PageContainer>
