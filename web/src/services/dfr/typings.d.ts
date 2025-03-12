@@ -162,6 +162,17 @@ declare namespace API {
     total: number;
   };
 
+  type PasswordParams = {
+    /** New password (optional) */
+    new_password?: any;
+    /** New username (optional) */
+    new_username?: any;
+    /** Old password */
+    password: string;
+    /** Old username */
+    username: string;
+  };
+
   type RestResponseI64 = {
     code: number;
     data?: number;

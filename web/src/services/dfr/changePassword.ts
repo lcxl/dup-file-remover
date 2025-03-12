@@ -3,7 +3,7 @@
 import { request } from '@umijs/max';
 
 /** Change password of user account POST /api/dfr/api/login/password */
-export async function changePassword(body: API.LoginParams, options?: { [key: string]: any }) {
+export async function changePassword(body: API.PasswordParams, options?: { [key: string]: any }) {
   return request<any>('/api/dfr/api/login/password', {
     method: 'POST',
     headers: {

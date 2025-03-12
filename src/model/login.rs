@@ -45,6 +45,6 @@ pub struct PasswordParams {
     pub password: String,
     /// New username (optional)
     pub new_username: Option<String>,
-    /// New password
-    pub new_password: String,
+    /// New password (optional)
+    pub new_password: Option<String>,
 }

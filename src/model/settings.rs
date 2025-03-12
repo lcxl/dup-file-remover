@@ -16,7 +16,7 @@ pub struct Args {
     #[arg(short, long, default_value = "conf/config")]
     config_file_path: String,
 }
-
+/// Settings model for the application. This struct is used to load and save settings from a configuration file.
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
 pub struct SettingsModel {
     /// Path to the configuration file. If not specified, a new one will be created in the "conf" directory.
@@ -104,31 +104,42 @@ impl Settings {
         let config_context = fs::read_to_string(&config_file_path)?;
         let mut toml_doc = config_context.parse::<DocumentMut>()?;
         let default_settings = Settings::default();
-        if self.db_path != default_settings.db_path {
+        if self.db_path != default_settings.db_path || toml_doc.contains_key("db_path") {
             toml_doc["db_path"] = toml_edit::value(self.db_path.clone());
         }
-        if self.enable_ipv6 != default_settings.enable_ipv6 {
+        if self.enable_ipv6 != default_settings.enable_ipv6 || toml_doc.contains_key("enable_ipv6")
+        {
             toml_doc["enable_ipv6"] = toml_edit::value(self.enable_ipv6);
         }
-        if self.listen_addr_ipv4 != default_settings.listen_addr_ipv4 {
+        if self.listen_addr_ipv4 != default_settings.listen_addr_ipv4
+            || toml_doc.contains_key("listen_addr_ipv4")
+        {
             toml_doc["listen_addr_ipv4"] = toml_edit::value(self.listen_addr_ipv4.clone());
         }
-        if self.listen_addr_ipv6 != default_settings.listen_addr_ipv6 {
+        if self.listen_addr_ipv6 != default_settings.listen_addr_ipv6
+            || toml_doc.contains_key("listen_addr_ipv6")
+        {
             toml_doc["listen_addr_ipv6"] = toml_edit::value(self.listen_addr_ipv6.clone());
         }
-        if self.port != default_settings.port {
+        if self.port != default_settings.port || toml_doc.contains_key("port") {
             toml_doc["port"] = toml_edit::value(self.port as i64);
         }
-        if self.log_level != default_settings.log_level {
+        if self.log_level != default_settings.log_level || toml_doc.contains_key("log_level") {
             toml_doc["log_level"] = toml_edit::value(self.log_level.clone());
         }
-        if self.login_user_name != default_settings.login_user_name {
+        if self.login_user_name != default_settings.login_user_name
+            || toml_doc.contains_key("login_user_name")
+        {
             toml_doc["login_user_name"] = toml_edit::value(self.login_user_name.clone());
         }
-        if self.login_password != default_settings.login_password {
+        if self.login_password != default_settings.login_password
+            || toml_doc.contains_key("login_password")
+        {
             toml_doc["login_password"] = toml_edit::value(self.login_password.clone());
         }
-        if self.default_scan_path != default_settings.default_scan_path {
+        if self.default_scan_path != default_settings.default_scan_path
+            || toml_doc.contains_key("default_scan_path")
+        {
             toml_doc["default_scan_path"] = toml_edit::value(self.default_scan_path.clone());
         }
         let toml_str = toml_doc.to_string();

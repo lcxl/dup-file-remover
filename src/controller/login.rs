@@ -81,7 +81,7 @@ pub async fn logout_account(session: Session) -> Result<HttpResponse, AWError> {
 
 #[utoipa::path(
     summary = "Change password of user account",
-    request_body(content = LoginParams),
+    request_body(content = PasswordParams),
     responses(
         (status = 200, description = "Change password successful"),
         (status = 403, description = "Illegal username or password"),
@@ -95,6 +95,15 @@ pub async fn change_password(
 ) -> Result<HttpResponse, AWError> {
     let params = requst_json.into_inner();
     let mut settings = settings.lock().await;
+    if params.password.is_empty() || params.username.is_empty() {
+        error!("Username or password is empty");
+        return Ok(HttpResponse::Forbidden().body("Illegal username or password"));
+    }
+    if params.new_password.is_none() && params.new_username.is_none() {
+        error!("All new username and new  password are  empty");
+        return Ok(HttpResponse::Forbidden().body("Illegal new username or new password"));
+    }
+
     if settings.login_user_name != params.username {
         error!("Username does not match");
         return Ok(HttpResponse::Forbidden().body("Illegal username or password"));
@@ -103,13 +112,30 @@ pub async fn change_password(
         error!("Password does not match");
         return Ok(HttpResponse::Forbidden().body("Illegal username or password"));
     }
-    settings.login_user_name = params
-        .new_username
-        .unwrap_or_else(|| params.username.clone());
-    settings.login_password = params.new_password;
+
+    if let Some(new_username) = params.new_username {
+        if !new_username.is_empty() {
+            info!(
+                "Change username from {} to {}",
+                settings.login_user_name, new_username
+            );
+            settings.login_user_name = new_username;
+        }
+    }
+
+    if let Some(new_password) = params.new_password {
+        if !new_password.is_empty() {
+            info!(
+                "Change password from {} to {}",
+                settings.login_password, new_password
+            );
+            settings.login_password = new_password;
+        }
+    }
+
     // save new settings to file
     settings.save()?;
-    info!("Password changed successfully");
+    info!("Username / password changed successfully");
 
     // logout
     session.remove(SESSION_KEY_USERNAME);

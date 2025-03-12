@@ -1,6 +1,8 @@
 import { querySettings } from "@/services/dfr/querySettings";
+import { updateSettings } from "@/services/dfr/updateSettings";
 import { PageContainer, ProForm, ProFormDigit, ProFormSelect, ProFormSwitch, ProFormText } from "@ant-design/pro-components";
 import { useModel } from "@umijs/max";
+import { message } from "antd";
 
 const Settings: React.FC = () => {
     const { initialState, setInitialState } = useModel('@@initialState');
@@ -8,14 +10,18 @@ const Settings: React.FC = () => {
     return (
         <PageContainer>
 
-            <ProForm
+            <ProForm<API.SettingsModel>
                 onValuesChange={(changeValues) => console.log(changeValues)}
 
                 request={async () => {
                     const response = await querySettings();
-                    return response.data;
+                    return response.data!;
                 }}
-
+                onFinish={async (values) => {
+                    console.log(values);
+                    await updateSettings(values);
+                    message.success('更新成功');
+                }}
             >
                 <ProFormText name="config_file_path" label="配置文件路径（不可更改）" disabled={true} />
                 <ProFormText name="db_path" label="sqlite配置地址（重启生效，变更后所有扫描的数据丢失）" />
