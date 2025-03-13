@@ -22,30 +22,14 @@ export default [
       },
     ],
   },
+   /*
   {
     path: '/welcome',
     name: 'welcome',
     icon: 'smile',
     component: './Welcome',
   },
-  {
-    path: '/admin',
-    name: 'admin',
-    icon: 'crown',
-    access: 'canAdmin',
-    routes: [
-      {
-        path: '/admin',
-        redirect: '/admin/sub-page',
-      },
-      {
-        path: '/admin/sub-page',
-        name: 'sub-page',
-        component: './Admin',
-      },
-    ],
-  },
-  /*
+ 
   {
     name: 'list.table-list',
     icon: 'table',
@@ -54,10 +38,25 @@ export default [
   },
   */
   {
-    name: 'list.file-list',
-    icon: 'table',
-    path: '/filelist',
-    component: './FileList',
+    path: '/scan',
+    name: 'scan',
+    icon: 'search',
+    routes: [
+      {
+        path: '/scan',
+        redirect: '/scan/list',
+      },
+      {
+        name: 'file-list',
+        path: '/scan/list',
+        component: './FileList',
+      },
+      {
+        path: '/scan/file',
+        name: 'scan-file',
+        component: './Scan',
+      },
+    ],
   },
   {
     path: '/account',
@@ -79,11 +78,12 @@ export default [
     name: 'system.settings',
     icon: 'setting',
     path: '/system/settings',
+    access: 'canAdmin',
     component: './System/Settings',
   },
   {
     path: '/',
-    redirect: '/filelist',
+    redirect: '/scan',
   },
   {
     path: '*',

@@ -25,7 +25,6 @@ export default {
   'menu.list.table-list': '查询表格',
   'menu.list.basic-list': '标准列表',
   'menu.list.card-list': '卡片列表',
-  'menu.list.file-list': '文件列表',
   'menu.list.search-list': '搜索列表',
   'menu.list.search-list.articles': '搜索列表（文章）',
   'menu.list.search-list.projects': '搜索列表（项目）',
@@ -51,4 +50,7 @@ export default {
   'menu.editor.mind': '脑图编辑器',
   'menu.editor.koni': '拓扑编辑器',
   'menu.system.settings': '系统设置',
+  'menu.scan': '扫描',
+  'menu.scan.scan-file': '扫描文件',
+  'menu.scan.file-list': '文件列表',
 };

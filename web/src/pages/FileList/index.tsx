@@ -290,7 +290,7 @@ const TableList: React.FC = () => {
             key="primary"
             onClick={() => {
               // 转到欢迎页面
-              history.push('/admin');
+              history.push('/scan/file');
             }}
           >
             <SearchOutlined /> <FormattedMessage id="pages.searchTable.startSearch" defaultMessage="Start search" />

@@ -25,7 +25,6 @@ export default {
   'menu.list.table-list': 'Search Table',
   'menu.list.basic-list': 'Basic List',
   'menu.list.card-list': 'Card List',
-  'menu.list.file-list': 'File Table',
   'menu.list.search-list': 'Search List',
   'menu.list.search-list.articles': 'Search List(articles)',
   'menu.list.search-list.projects': 'Search List(projects)',
@@ -51,4 +50,7 @@ export default {
   'menu.editor.mind': 'Mind Editor',
   'menu.editor.koni': 'Koni Editor',
   'menu.system.settings': 'System Settings',
+  'menu.scan': 'Scan',
+  'menu.scan.scan-file': 'Scan File',
+  'menu.scan.file-list': 'File Table',
 };
