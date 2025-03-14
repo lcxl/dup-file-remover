@@ -1,8 +1,10 @@
 import { querySettings } from "@/services/dfr/querySettings";
 import { updateSettings } from "@/services/dfr/updateSettings";
 import { PageContainer, ProForm, ProFormDigit, ProFormSelect, ProFormSwitch, ProFormText } from "@ant-design/pro-components";
-import { useModel } from "@umijs/max";
+import { useIntl, useModel } from "@umijs/max";
 import { Alert, Divider, message } from "antd";
+
+const intl = useIntl();
 
 const Settings: React.FC = () => {
     const { initialState, setInitialState } = useModel('@@initialState');
@@ -29,17 +31,45 @@ const Settings: React.FC = () => {
                     message.success('更新成功！');
                 }}
             >
-                <ProFormText name="config_file_path" label="配置文件路径（不可更改）" disabled={true} />
-                <ProFormText name="db_path" label="sqlite配置地址（重启生效，变更后所有扫描的数据丢失）" />
-                <ProFormSwitch name="enable_ipv6" label="启用ipv6（重启生效）" />
-                <ProFormText name="listen_addr_ipv4"
-                    label="ipv4监听地址（重启生效）"
+                <ProFormText
+                    name="config_file_path"
+                    label={intl.formatMessage({
+                        id: "pages.system.settings.configFilePath",
+                        defaultMessage: "配置文件路径（不可更改）"
+                    })}
+                    disabled />
+                <ProFormText
+                    name="db_path"
+                    label={intl.formatMessage({
+                        id: "pages.system.settings.dbPath",
+                        defaultMessage: "sqlite配置地址（重启生效，变更后所有扫描的数据丢失）"
+                    })}
+                    rules={[
+                        { required: true, message: 'sqlite配置地址必填！' },
+                    ]}
+                    hasFeedback
+                />
+                <ProFormSwitch
+                    name="enable_ipv6"
+                    label={intl.formatMessage({
+                        id: "pages.system.settings.enableIpv6",
+                        defaultMessage: "启用ipv6（重启生效）"
+                    })}
+                />
+                <ProFormText
+                    name="listen_addr_ipv4"
+                    label={intl.formatMessage({
+                        id: "pages.system.settings.listenAddrIpv4",
+                        defaultMessage: "ipv4监听地址（重启生效）"
+                    })}
                     hasFeedback
                     rules={[
                         { required: true, message: '请输入ipv4地址' },
                     ]}
                 />
-                <ProFormText name="listen_addr_ipv6" label="ipv6监听地址（重启生效）" />
+                <ProFormText
+                    name="listen_addr_ipv6"
+                    label="ipv6监听地址（重启生效）" />
                 <ProFormDigit
                     label="端口号（重启生效）"
                     name="port"
@@ -60,7 +90,9 @@ const Settings: React.FC = () => {
                     placeholder="请指定日志级别"
                     rules={[{ required: true, message: '请指定日志级别!' }]}
                 />
-                <ProFormText name="default_scan_path" label="默认扫描路径" />
+                <ProFormText
+                    name="default_scan_path"
+                    label="默认扫描路径" />
             </ProForm>
         </PageContainer>
 

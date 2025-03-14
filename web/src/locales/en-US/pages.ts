@@ -75,4 +75,8 @@ export default {
   'pages.searchTable.searchMd5Count': 'File md5 count range',
   'pages.searchTable.searchFileSize': 'File size range',
   'pages.searchTable.startSearch': 'Start search',
+  'pages.system.settings.configFilePath': 'Configuration file path (cannot be changed)',
+  'pages.system.settings.dbPath': 'sqlite configuration address (takes effect after restart, all scanned data will be lost after change)',
+  'pages.system.settings.enableIpv6': 'Enable ipv6 (takes effect after restart)',
+  'pages.system.settings.listenAddrIpv4': 'ipv4 listening address (takes effect after restart)',
 };

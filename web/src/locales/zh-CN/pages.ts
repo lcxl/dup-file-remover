@@ -72,4 +72,8 @@ export default {
   'pages.searchTable.searchMd5Count': '重复项范围',
   'pages.searchTable.searchFileSize': '文件大小范围',
   'pages.searchTable.startSearch': '开始扫描',
+  'pages.system.settings.configFilePath': '配置文件路径（不可更改）',
+  'pages.system.settings.dbPath': 'sqlite配置地址（重启生效，变更后所有扫描的数据丢失）',
+  'pages.system.settings.enableIpv6': '启用ipv6（重启生效）',
+  'pages.system.settings.listenAddrIpv4': 'ipv4监听地址（重启生效）',
 };
