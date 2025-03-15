@@ -3,7 +3,7 @@ pub mod database;
 pub mod model;
 pub mod utils;
 
-use std::{env, ops::Deref};
+use std::{env, fs, ops::Deref, path::PathBuf};
 
 use actix_server::Server;
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
@@ -62,20 +62,34 @@ pub fn run() -> Result<Server, DfrError> {
     );
     info!("Server args: {:?}", args);
     info!("Server settings: {:?}", settings);
-    let mut file_path = env::current_exe()?;
-    info!("Server file path: {:?}", file_path);
-    file_path.pop();
-    file_path.push("static");
-    info!("Server static path: {:?}", file_path);
+
+    // Get server execution file path
+    let exec_file_path = env::current_exe()?;
+    info!("Server execution file path: {:?}", exec_file_path);
+
+    // Create a path to the static files directory, which is assumed to be in the same directory as the executable.
+    let mut static_file_path = exec_file_path.clone();
+    static_file_path.pop();
+    static_file_path.push("static");
+    info!("Server static file path: {:?}", static_file_path);
+
+    // Create a path to the trash directory
+    let trash_path = PathBuf::from(&settings.trash_path);
+    if !trash_path.exists() {
+        warn!("Trash path does not exist, creating it: {:?}", trash_path);
+        // Create the directory and any necessary parent directories.
+        fs::create_dir_all(&trash_path)?;
+    }
+    info!("Trash path: {:?}", trash_path);
 
     let secret_key = Key::generate();
 
     let database_manager = PoolDatabaseManager::new(&settings.db_path)?;
     database_manager.create_tables()?;
-    // create shared scan status for scan progress tracking
+    // Create shared scan status for scan progress tracking
     let scan_status_data = web::Data::new(SharedScanStatus::new());
     let shared_settings = web::Data::new(SharedSettings::from(settings.clone()));
-    //start the server
+    // Start the server
     let mut http_server = HttpServer::new(move || {
         App::new()
             .into_utoipa_app()
@@ -130,8 +144,7 @@ pub fn run() -> Result<Server, DfrError> {
                     .build(),
             )
             .service(
-                actix_files::Files::new("/", file_path.to_string_lossy().to_string().as_str())
-                    .index_file("index.html"),
+                actix_files::Files::new("/", static_file_path.clone()).index_file("index.html"),
             )
     });
 

@@ -70,19 +70,14 @@ impl FileInfo {
         let metadata = std::fs::metadata(file_path.clone())?;
         let file_name = file_path.file_name().unwrap().to_string_lossy().to_string();
         let file_extension: Option<String>;
-        if file_path.extension().is_none() {
-            file_extension = Option::None;
+        if let Some(file_ext) = file_path.extension() {
+            // convert to lowercase
+            file_extension = Some(file_ext.to_string_lossy().to_string().to_lowercase());
         } else {
-            // convert to lowercase for consistency
-            file_extension = Option::Some(
-                file_path
-                    .extension()
-                    .unwrap()
-                    .to_string_lossy()
-                    .to_string()
-                    .to_lowercase(),
-            );
+            // no extension
+            file_extension = None;
         }
+
         let created = DateTime::<Local>::from(metadata.created()?);
         let modified = DateTime::<Local>::from(metadata.modified()?);
         let inode_info = InodeInfo {

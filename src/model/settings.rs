@@ -35,6 +35,10 @@ pub struct SettingsModel {
     pub log_level: String,
     /// default scan path for the server to start with
     pub default_scan_path: String,
+    /// interval in seconds to clear trash
+    pub clear_trash_interval_s: u32,
+    /// trash path for deleted files
+    pub trash_path: String, 
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -60,6 +64,10 @@ pub struct Settings {
     pub login_password: String,
     /// default scan path for the server to start with
     pub default_scan_path: String,
+    /// interval in seconds to clear trash
+    pub clear_trash_interval_s: u32,
+    /// trash path for deleted files
+    pub trash_path: String,
 }
 
 impl Default for Settings {
@@ -75,6 +83,8 @@ impl Default for Settings {
             login_user_name: "admin".to_string(),
             login_password: "password".to_string(),
             default_scan_path: "data/".to_string(),
+            clear_trash_interval_s: 2592000, // 30 days in seconds
+            trash_path: "data/dfr_trash".to_string(),
         }
     }
 }
@@ -142,6 +152,17 @@ impl Settings {
         {
             toml_doc["default_scan_path"] = toml_edit::value(self.default_scan_path.clone());
         }
+        if self.clear_trash_interval_s != default_settings.clear_trash_interval_s
+            || toml_doc.contains_key("clear_trash_interval_s")
+        {
+            toml_doc["clear_trash_interval_s"] =
+                toml_edit::value(self.clear_trash_interval_s as i64);
+        }
+        if self.trash_path != default_settings.trash_path
+            || toml_doc.contains_key("trash_path")
+        {
+            toml_doc["trash_path"] = toml_edit::value(self.trash_path.clone());
+        }
         let toml_str = toml_doc.to_string();
         info!(
             "Saving config to: {}, content: {}",
@@ -161,6 +182,8 @@ impl Settings {
         self.listen_addr_ipv6 = new_settings.listen_addr_ipv6;
         self.log_level = new_settings.log_level;
         self.default_scan_path = new_settings.default_scan_path;
+        self.clear_trash_interval_s = new_settings.clear_trash_interval_s;
+        self.trash_path = new_settings.trash_path;
     }
 
     pub fn to_model(&self) -> SettingsModel {
@@ -174,6 +197,8 @@ impl Settings {
             listen_addr_ipv6: _value.listen_addr_ipv6,
             log_level: _value.log_level,
             default_scan_path: _value.default_scan_path,
+            clear_trash_interval_s: _value.clear_trash_interval_s,
+            trash_path: _value.trash_path,
         };
         model
     }

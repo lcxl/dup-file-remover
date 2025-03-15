@@ -69,15 +69,16 @@ impl DatabaseManager {
             c.pragma_update(None, "synchronous", "NORMAL")?;
             Ok(())
         });
-        let pool = Pool::new(manager).unwrap();
+        let pool = Pool::new(manager)?;
 
         Ok(Self { pool })
     }
 
-    pub fn create_tables(&self) -> Result<()> {
-        let mut conn = self.pool.get().unwrap();
+    pub fn create_tables(&self) -> Result<(), DfrError> {
+        let mut conn = self.pool.get()?;
         // begin transaction
         let tx = conn.transaction()?;
+        // create inode_info table if it doesn't exist
         let sql = "CREATE TABLE IF NOT EXISTS inode_info (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             inode INTEGER NOT NULL,
@@ -105,6 +106,7 @@ impl DatabaseManager {
             tx.execute("CREATE INDEX idx_modified ON inode_info (modified);", [])?;
         }
 
+        // create table for file info
         let sql = "CREATE TABLE IF NOT EXISTS file_info (
             inode_info_id INTEGER NOT NULL,
             dir_path TEXT NOT NULL,
@@ -122,13 +124,26 @@ impl DatabaseManager {
                 [],
             )?;
         }
+        // create table for trash info
+        let sql = "CREATE TABLE IF NOT EXISTS trash_info (
+            md5 TEXT NOT NULL,
+            dir_path TEXT NOT NULL,
+            file_name TEXT NOT NULL,
+            remove_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(dir_path, file_name)
+        );";
+        let result = tx.execute(sql, [])?;
+        if result > 0 {
+            tx.execute("CREATE INDEX idx_md5 ON trash_info (md5);", [])?;
+        }
         tx.commit()?;
         Ok(())
     }
 
-    pub fn drop_tables(&self) -> Result<()> {
-        let conn = self.pool.get().unwrap();
-
+    pub fn drop_tables(&self) -> Result<(), DfrError> {
+        let conn = self.pool.get()?;
+        let sql = "DROP TABLE IF EXISTS trash_info";
+        conn.execute(sql, [])?;
         let sql = "DROP TABLE IF EXISTS inode_info";
         conn.execute(sql, [])?;
         let sql = "DROP TABLE IF EXISTS file_info";
@@ -136,15 +151,15 @@ impl DatabaseManager {
         Ok(())
     }
 
-    pub fn update_version(&self, file_info: &FileInfo) -> Result<usize> {
-        let conn = self.pool.get().unwrap();
+    pub fn update_version(&self, file_info: &FileInfo) -> Result<usize, DfrError> {
+        let conn = self.pool.get()?;
         let mut statement =
             conn.prepare("UPDATE file_info SET version = ? WHERE dir_path = ? and file_name = ?")?;
-        statement.execute((file_info.version, &file_info.dir_path, &file_info.file_name))
+        Ok(statement.execute((file_info.version, &file_info.dir_path, &file_info.file_name))?)
     }
 
-    pub fn insert_file_info(&self, file_info: &FileInfo) -> Result<()> {
-        let mut conn = self.pool.get().unwrap();
+    pub fn insert_file_info(&self, file_info: &FileInfo) -> Result<(), DfrError> {
+        let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let node_info_do_result = self.query_node_info_do_by_inode(
             &tx,
@@ -205,8 +220,9 @@ impl DatabaseManager {
                 Err(_e)
             }
         };
+        result?;
         tx.commit()?;
-        return result;
+        Ok(())
     }
 
     pub fn query_node_info_do_by_inode(
@@ -378,12 +394,12 @@ impl DatabaseManager {
             "SELECT md5, count(md5) as md5_count
             FROM inode_info where 1=1 ",
         );
-        if query_list_params.min_file_size.is_some() {
-            params.push(Arc::new(query_list_params.min_file_size.unwrap()));
+        if let Some(min_file_size) = query_list_params.min_file_size {
+            params.push(Arc::new(min_file_size));
             sub_query_sql += " and size >= ?";
         }
-        if query_list_params.max_file_size.is_some() {
-            params.push(Arc::new(query_list_params.max_file_size.unwrap()));
+        if let Some(max_file_size) = query_list_params.max_file_size {
+            params.push(Arc::new(max_file_size));
             sub_query_sql += " and size < ?";
         }
         sub_query_sql += " group by md5";
@@ -397,30 +413,20 @@ impl DatabaseManager {
                 and a1.md5 = a3.md5 ",
             sub_query_sql
         );
-        if query_list_params.dir_path.is_some() {
+        if let Some(dir_path) = query_list_params.dir_path.clone() {
             query_sql += " and a2.dir_path like ?";
-            params.push(Arc::new(format!(
-                "%{}%",
-                query_list_params.dir_path.clone().unwrap()
-            )));
+            params.push(Arc::new(format!("%{}%", dir_path)));
         }
-        if query_list_params.file_name.is_some() {
+        if let Some(file_name) = query_list_params.file_name.clone() {
             query_sql += " and a2.file_name like ?";
-            params.push(Arc::new(format!(
-                "%{}%",
-                query_list_params.file_name.clone().unwrap()
-            )));
+            params.push(Arc::new(format!("%{}%", file_name)));
         }
-        if query_list_params.file_extension.is_some() {
+        if let Some(file_extension) = query_list_params.file_extension.clone() {
             query_sql += " and a2.file_extension like ?";
-            params.push(Arc::new(format!(
-                "%{}%",
-                query_list_params.file_extension.clone().unwrap()
-            )));
+            params.push(Arc::new(format!("%{}%", file_extension)));
         }
-        if query_list_params.file_extension_list.is_some() {
+        if let Some(file_extension_list) = query_list_params.file_extension_list.clone() {
             query_sql += " and a2.file_extension in (";
-            let file_extension_list = query_list_params.file_extension_list.clone().unwrap();
             let file_extensions: Vec<&str> = file_extension_list.split(',').collect();
             let mut file_extension_params = Vec::new();
             for file_extension in file_extensions.iter() {
@@ -429,43 +435,37 @@ impl DatabaseManager {
             }
             query_sql += (file_extension_params.join(",") + ")").as_str();
         }
-        if query_list_params.md5.is_some() {
+        if let Some(md5) = query_list_params.md5.clone() {
             query_sql += " and a1.md5 = ?";
-            params.push(Arc::new(query_list_params.md5.clone().unwrap()));
+            params.push(Arc::new(md5));
         }
-        if query_list_params.start_created_time.is_some() {
+        if let Some(start_created_time) = query_list_params.start_created_time.clone() {
             query_sql += " and a1.created >= ?";
-            let created = query_list_params.start_created_time.clone().unwrap();
-            params.push(Arc::new(created));
+            params.push(Arc::new(start_created_time));
         }
-        if query_list_params.end_created_time.is_some() {
+        if let Some(end_created_time) = query_list_params.end_created_time.clone() {
             query_sql += " and a1.created <= ?";
-            let created = query_list_params.end_created_time.clone().unwrap();
-            params.push(Arc::new(created));
+            params.push(Arc::new(end_created_time));
         }
 
-        if query_list_params.start_modified_time.is_some() {
+        if let Some(start_modified_time) = query_list_params.start_modified_time.clone() {
             query_sql += " and a1.modified >= ?";
-            let modified = query_list_params.start_modified_time.clone().unwrap();
-            params.push(Arc::new(modified));
-            info!("start_modified_time: {:?}", modified);
+            params.push(Arc::new(start_modified_time));
+            info!("start_modified_time: {:?}", start_modified_time);
         }
-        if query_list_params.end_modified_time.is_some() {
+        if let Some(end_modified_time) = query_list_params.end_modified_time.clone() {
             query_sql += " and a1.modified <= ?";
-            let modified = query_list_params.end_modified_time.clone().unwrap();
-            params.push(Arc::new(modified));
-            info!("end_modified_time: {:?}", modified);
+            params.push(Arc::new(end_modified_time));
+            info!("end_modified_time: {:?}", end_modified_time);
         }
-        if query_list_params.min_md5_count.is_some() {
+        if let Some(min_md5_count) = query_list_params.min_md5_count.clone() {
             query_sql += " and a3.md5_count >= ?";
-            let md5_count = query_list_params.min_md5_count.clone().unwrap();
-            params.push(Arc::new(md5_count));
+            params.push(Arc::new(min_md5_count));
         }
 
-        if query_list_params.max_md5_count.is_some() {
+        if let Some(max_md5_count) = query_list_params.max_md5_count.clone() {
             query_sql += " and a3.md5_count < ?";
-            let md5_count = query_list_params.max_md5_count.clone().unwrap();
-            params.push(Arc::new(md5_count));
+            params.push(Arc::new(max_md5_count));
         }
 
         let count_sql = String::from("SELECT COUNT(*) ") + &query_sql;
