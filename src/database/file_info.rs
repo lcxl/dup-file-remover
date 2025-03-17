@@ -26,6 +26,7 @@ pub struct InodeInfo {
     /// File size
     pub size: u64,
 }
+
 /// Implement PartialEq for InodeInfo to compare two instances based on their fields.
 /// This comparison ignores the md5 field.
 impl PartialEq<InodeInfo> for InodeInfo {
@@ -42,6 +43,7 @@ impl PartialEq<InodeInfo> for InodeInfo {
             && self.size == other.size
     }
 }
+/// File info
 #[derive(Debug, Serialize, ToSchema, Clone)]
 pub struct FileInfo {
     /// Inode info
@@ -131,17 +133,19 @@ impl FileInfo {
 /// File info with md5 count
 #[derive(Debug, Serialize, ToSchema)]
 pub struct FileInfoWithMd5Count {
-    // File info
+    /// File info
     pub file_info: FileInfo,
-    // Md5 count
+    /// Md5 count
     pub md5_count: usize,
+    /// Optional filter md5 count
+    pub filter_md5_count: Option<usize>,
 }
 
 /// File info list with total count
 #[derive(Debug, Serialize, ToSchema)]
 pub struct FileInfoList {
-    /// file info list
+    /// File info list
     pub file_info_list: Vec<FileInfoWithMd5Count>,
-    /// total file count
+    /// Total file count
     pub total_count: u64,
 }

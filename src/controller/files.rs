@@ -44,6 +44,6 @@ pub async fn delete_file(
     requst_json: web::Json<DeleteFileRequest>,
 ) -> Result<HttpResponse, AWError> {
     let delete_file_request = requst_json.into_inner();
-    info!("Delete file {} successfully", delete_file_request.file_path);
+    info!("Delete file {} in {} successfully", delete_file_request.file_name, delete_file_request.dir_path);
     Ok(HttpResponse::Ok().finish())
 }

@@ -4,7 +4,10 @@ use chrono::{DateTime, Local};
 use log::{error, info};
 use rusqlite::{params_from_iter, Connection, Params, Result, ToSql};
 
-use crate::{model::files::QueryListParams, utils::error::DfrError};
+use crate::{
+    model::files::QueryListParams,
+    utils::{self, error::DfrError},
+};
 
 use super::file_info::{FileInfo, FileInfoList, FileInfoWithMd5Count, InodeInfo};
 use r2d2_sqlite::SqliteConnectionManager;
@@ -79,7 +82,8 @@ impl DatabaseManager {
         // begin transaction
         let tx = conn.transaction()?;
         // create inode_info table if it doesn't exist
-        let sql = "CREATE TABLE IF NOT EXISTS inode_info (
+        let sql = "
+        CREATE TABLE IF NOT EXISTS inode_info (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             inode INTEGER NOT NULL,
             dev_id INTEGER NOT NULL,
@@ -92,22 +96,14 @@ impl DatabaseManager {
             md5 TEXT NOT NULL,
             size INTEGER NOT NULL,
             UNIQUE(dev_id,inode)
-        );";
-        let result = tx.execute(sql, [])?;
-        info!("create table result: {}", result);
-        if result > 0 {
-            tx.execute(
-                "CREATE INDEX idx_inode_dev_id ON inode_info (inode,dev_id);",
-                [],
-            )?;
-            tx.execute("CREATE INDEX idx_md5 ON inode_info (md5);", [])?;
-            tx.execute("CREATE INDEX idx_size ON inode_info (size);", [])?;
-            tx.execute("CREATE INDEX idx_created ON inode_info (created);", [])?;
-            tx.execute("CREATE INDEX idx_modified ON inode_info (modified);", [])?;
-        }
+        );
+        CREATE INDEX IF NOT EXISTS idx_inode_dev_id ON inode_info (inode,dev_id);
+        CREATE INDEX IF NOT EXISTS idx_md5 ON inode_info (md5);
+        CREATE INDEX IF NOT EXISTS idx_size ON inode_info (size);
+        CREATE INDEX IF NOT EXISTS idx_created ON inode_info (created);
+        CREATE INDEX IF NOT EXISTS idx_modified ON inode_info (modified);
 
-        // create table for file info
-        let sql = "CREATE TABLE IF NOT EXISTS file_info (
+        CREATE TABLE IF NOT EXISTS file_info (
             inode_info_id INTEGER NOT NULL,
             dir_path TEXT NOT NULL,
             file_name TEXT NOT NULL,
@@ -115,39 +111,32 @@ impl DatabaseManager {
             version INTEGER NOT NULL,
             scan_time DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(dir_path, file_name)
-        );";
-        let result = tx.execute(sql, [])?;
-        if result > 0 {
-            tx.execute("CREATE INDEX idx_file_name ON file_info (file_name);", [])?;
-            tx.execute(
-                "CREATE INDEX idx_file_extension ON file_info (file_extension);",
-                [],
-            )?;
-        }
-        // create table for trash info
-        let sql = "CREATE TABLE IF NOT EXISTS trash_info (
+        );
+        CREATE INDEX IF NOT EXISTS idx_file_name ON file_info (file_name);
+        CREATE INDEX IF NOT EXISTS idx_file_extension ON file_info (file_extension);
+
+        CREATE TABLE IF NOT EXISTS trash_info (
             md5 TEXT NOT NULL,
             dir_path TEXT NOT NULL,
             file_name TEXT NOT NULL,
             remove_time DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(dir_path, file_name)
-        );";
-        let result = tx.execute(sql, [])?;
-        if result > 0 {
-            tx.execute("CREATE INDEX idx_md5 ON trash_info (md5);", [])?;
-        }
+        );
+        CREATE INDEX IF NOT EXISTS idx_file_name ON file_info (file_name);
+        ";
+        tx.execute_batch(sql)?;
         tx.commit()?;
         Ok(())
     }
 
     pub fn drop_tables(&self) -> Result<(), DfrError> {
         let conn = self.pool.get()?;
-        let sql = "DROP TABLE IF EXISTS trash_info";
-        conn.execute(sql, [])?;
-        let sql = "DROP TABLE IF EXISTS inode_info";
-        conn.execute(sql, [])?;
-        let sql = "DROP TABLE IF EXISTS file_info";
-        conn.execute(sql, [])?;
+        let sql = "
+        DROP TABLE IF EXISTS trash_info;
+        DROP TABLE IF EXISTS inode_info;
+        DROP TABLE IF EXISTS file_info;
+        ";
+        conn.execute_batch(sql)?;
         Ok(())
     }
 
@@ -231,18 +220,20 @@ impl DatabaseManager {
         dev_id: u64,
         node_id: u64,
     ) -> Result<InodeInfoDO> {
-        let sql =
-            "SELECT inode, dev_id, permissions, nlink, uid, gid, created, modified, md5, size, id
+        let sql = "
+        SELECT inode, dev_id, permissions, nlink, uid, gid, created, modified, md5, size, id
         from inode_info
-        WHERE dev_id = ? and inode = ?";
+        WHERE dev_id = ? and inode = ?
+        ";
         self.query_node_info_do(&conn, sql, [dev_id, node_id])
     }
 
     pub fn get_node_info_do_by_id(&self, conn: &Connection, id: u64) -> Result<InodeInfoDO> {
-        let sql =
-            "SELECT inode, dev_id, permissions, nlink, uid, gid, created, modified, md5, size, id
+        let sql = "
+        SELECT inode, dev_id, permissions, nlink, uid, gid, created, modified, md5, size, id
         from inode_info
-        WHERE id = ?";
+        WHERE id = ?
+        ";
         self.query_node_info_do(&conn, sql, [id])
     }
 
@@ -387,12 +378,15 @@ impl DatabaseManager {
         Ok(())
     }
 
-    pub fn list_files(&self, query_list_params: &QueryListParams) -> Result<FileInfoList> {
+    pub fn list_files(
+        &self,
+        query_list_params: &QueryListParams,
+    ) -> Result<FileInfoList, DfrError> {
         let mut conn = self.pool.get().unwrap();
         let mut params: Vec<Arc<dyn ToSql>> = Vec::new();
         let mut sub_query_sql = String::from(
             "SELECT md5, count(md5) as md5_count
-            FROM inode_info where 1=1 ",
+            FROM inode_info where 1=1",
         );
         if let Some(min_file_size) = query_list_params.min_file_size {
             params.push(Arc::new(min_file_size));
@@ -403,15 +397,57 @@ impl DatabaseManager {
             sub_query_sql += " and size < ?";
         }
         sub_query_sql += " group by md5";
+        let mut filter_sub_query_sql = String::new();
+        let mut filter_select_params = String::new();
+        let mut filter_join_sql = String::new();
+        let mut has_filter_md5_count = false;
+        if let Some(filter_dup_file_in_dir_path) =
+            query_list_params.filter_dup_file_by_dir_path.clone()
+        {
+            if filter_dup_file_in_dir_path {
+                if query_list_params.dir_path.is_none() {
+                    return Err(utils::error::DfrError::IoError(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "Dir path can not be empty while filter_dup_file_by_dir_path is true",
+                    )));
+                }
+                let dir_path = query_list_params.dir_path.clone().unwrap();
+                let mut sub_query_sql = String::from(
+                    "SELECT b1.md5, count(b1.md5) as md5_count
+                    FROM inode_info as b1,
+                        file_info as b2
+                     where  b1.id = b2.inode_info_id",
+                );
+                if let Some(min_file_size) = query_list_params.min_file_size {
+                    params.push(Arc::new(min_file_size));
+                    sub_query_sql += " and b1.size >= ?";
+                }
+                if let Some(max_file_size) = query_list_params.max_file_size {
+                    params.push(Arc::new(max_file_size));
+                    sub_query_sql += " and b1.size < ?";
+                }
+
+                params.push(Arc::new(format!("%{}%", dir_path)));
+                sub_query_sql += " and b2.dir_path like ?";
+
+                sub_query_sql += " group by b1.md5";
+                filter_sub_query_sql = format!(", ({}) as a4", sub_query_sql);
+                filter_select_params = String::from(", a4.md5_count as filter_md5_count");
+                filter_join_sql = String::from("and a4.md5 = a3.md5");
+                has_filter_md5_count = true;
+            }
+        }
 
         let mut query_sql = format!(
-            "from inode_info as a1, 
+            " from inode_info as a1, 
                 file_info as a2, 
                 ({}) as a3
+                {}
             where 
                 a1.id = a2.inode_info_id 
-                and a1.md5 = a3.md5 ",
-            sub_query_sql
+                and a1.md5 = a3.md5
+                {}",
+            sub_query_sql, filter_sub_query_sql, filter_join_sql
         );
         if let Some(dir_path) = query_list_params.dir_path.clone() {
             query_sql += " and a2.dir_path like ?";
@@ -468,12 +504,12 @@ impl DatabaseManager {
             params.push(Arc::new(max_md5_count));
         }
 
-        let count_sql = String::from("SELECT COUNT(*) ") + &query_sql;
+        let count_sql = String::from("SELECT COUNT(*)") + &query_sql;
         let count_params = params.to_vec();
         info!("list file query count sql: {}", count_sql);
 
         let mut sql = String::from("SELECT a1.inode, a1.dev_id, a1.permissions, a1.nlink, a1.uid, a1.gid, a1.created, a1.modified, a1.md5, a1.size,
-            a2.dir_path, a2.file_name, a2.file_extension, a2.scan_time, a2.version, a3.md5_count ") + &query_sql;
+            a2.dir_path, a2.file_name, a2.file_extension, a2.scan_time, a2.version, a3.md5_count") +&filter_select_params+ &query_sql;
 
         // order by
         let mut order_by_list: Vec<String> = Vec::new();
@@ -500,7 +536,7 @@ impl DatabaseManager {
             (query_list_params.page_no - 1) * query_list_params.page_count,
         ));
 
-        info!("list file query sql: {}", sql);
+        info!("List file query sql: {}", sql);
 
         let trans = conn.transaction()?;
         let mut stmt = trans.prepare(&count_sql)?;
@@ -540,9 +576,16 @@ impl DatabaseManager {
                     version: row.get(14)?,
                 },
             );
+            let filter_md5_count;
+            if has_filter_md5_count {
+                filter_md5_count = Some(row.get(16)?);
+            } else {
+                filter_md5_count = None;
+            }
             Ok(FileInfoWithMd5Count {
                 file_info,
                 md5_count: row.get(15)?,
+                filter_md5_count,
             })
         });
         let mut files = Vec::new();

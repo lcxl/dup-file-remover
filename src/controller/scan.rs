@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -54,10 +54,14 @@ pub async fn start_scan(
     let scan_request = requst_json.into_inner();
     let path;
     let default_scan_path;
-    if scan_request.scan_path.len() == 0 || scan_request.scan_path.trim().len() == 0 {
-        // Use default scan path if no path is provided
+    let trash_path;
+    {
         let settings = settings.lock().await;
         default_scan_path = settings.default_scan_path.clone();
+        trash_path = std::fs::canonicalize(settings.trash_path.clone())?;
+    }
+    if scan_request.scan_path.len() == 0 || scan_request.scan_path.trim().len() == 0 {
+        // Use default scan path if no path is provided
         path = Path::new(default_scan_path.as_str());
     } else {
         path = Path::new(&scan_request.scan_path);
@@ -71,12 +75,20 @@ pub async fn start_scan(
     }
     STOP_SCAN_FLAG.store(false, Ordering::Relaxed);
     tokio::spawn(async move {
-        if let Err(e) = SCAN_FLAG.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed) {
+        if let Err(e) =
+            SCAN_FLAG.compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+        {
             error!("Failed to acquire lock for scan, giving up, e: {}", e);
             return;
         }
 
-        let result = scan_all_files(&scan_request, db.get_ref(), scan_status.get_ref()).await;
+        let result = scan_all_files(
+            &scan_request,
+            db.get_ref(),
+            scan_status.get_ref(),
+            trash_path.clone(),
+        )
+        .await;
         // reset the flag after scan completion or failure
         SCAN_FLAG.store(false, Ordering::Relaxed);
         if result.is_err() {
@@ -105,8 +117,10 @@ pub async fn scan_all_files(
     scan_request: &ScanRequest,
     db: &PoolDatabaseManager,
     scan_status: &SharedScanStatus,
+    trash_path: PathBuf,
 ) -> Result<(), DfrError> {
-    let current_path = Path::new(scan_request.scan_path.as_str());
+    let current_path_buf = std::fs::canonicalize(scan_request.scan_path.as_str())?;
+    let current_path = &current_path_buf.as_path();
     let start = SystemTime::now();
     let scan_version = start
         .duration_since(UNIX_EPOCH)
@@ -120,7 +134,15 @@ pub async fn scan_all_files(
         status.scan_request = Some(scan_request.clone());
         status.started = true;
     }
-    let result = _scan_all_files(current_path, scan_request, scan_version, db, scan_status).await;
+    let result = _scan_all_files(
+        current_path,
+        scan_request,
+        scan_version,
+        db,
+        scan_status,
+        trash_path.as_path(),
+    )
+    .await;
 
     {
         let mut status = scan_status.lock().await;
@@ -137,8 +159,13 @@ async fn _scan_all_files(
     scan_version: u64,
     db: &PoolDatabaseManager,
     scan_status: &SharedScanStatus,
+    trash_path: &Path,
 ) -> Result<(), DfrError> {
     if current_path.is_dir() {
+        if trash_path == current_path {
+            info!("Ignore trash path: {:?}", trash_path);
+            return Ok(());
+        }
         let mut entries = tokio::fs::read_dir(current_path).await?;
         while let Some(entry) = entries.next_entry().await? {
             if STOP_SCAN_FLAG.load(Ordering::Acquire) {
@@ -155,6 +182,7 @@ async fn _scan_all_files(
                     scan_version,
                     db,
                     scan_status,
+                    trash_path,
                 ));
                 list_task.await?;
             } else {

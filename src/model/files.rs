@@ -38,6 +38,9 @@ pub struct QueryListParams {
     pub order_by: Option<String>,
     /// Optional order direction, true for ascending, false for descending. Default is descending.
     pub order_asc: Option<bool>,
+
+    /// Optional filter for duplicate files in a specific directory path. If set,  if files within this directory duplicate those outside of it, they will be displayed.
+    pub filter_dup_file_by_dir_path: Option<bool>,
 }
 
 impl Default for QueryListParams {
@@ -60,14 +63,20 @@ impl Default for QueryListParams {
             max_md5_count: None,
             order_by: None,
             order_asc: None,
+            filter_dup_file_by_dir_path: None,
         }
     }
 }
 
+/// Request body for deleting a file.
 #[derive(Deserialize, Serialize, ToSchema, Clone, Debug)]
 pub struct DeleteFileRequest {
-    /// File path to be deleted
-    pub file_path: String,
+    /// The directory path of file to be deleted
+    pub dir_path: String,
+    /// The name of file to be deleted
+    pub file_name: String,
     /// Whether to delete permanently or move to trash
-    pub delete_permanently: bool,
+    pub delete_permanently: Option<bool>,
+    /// Force delete the file even if it is not duplicates. This option should be used with caution
+    pub force_delete: Option<bool>,
 }
