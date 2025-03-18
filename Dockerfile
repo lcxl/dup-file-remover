@@ -1,6 +1,6 @@
 ARG DFREMOVER_DEBUG_VERSION=false
 # Build stage
-FROM rust:1.84.1 AS rust-builder
+FROM rust:1.85.0 AS rust-builder
 WORKDIR /usr/src/dfr
 COPY . .
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
