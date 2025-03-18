@@ -4,11 +4,11 @@ import { PageContainer, ProForm, ProFormDigit, ProFormSelect, ProFormSwitch, Pro
 import { useIntl, useModel } from "@umijs/max";
 import { Alert, Divider, message } from "antd";
 
-const intl = useIntl();
+
 
 const Settings: React.FC = () => {
     const { initialState, setInitialState } = useModel('@@initialState');
-
+    const intl = useIntl();
     return (
         <PageContainer>
             <Alert
