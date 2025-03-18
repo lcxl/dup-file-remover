@@ -58,7 +58,7 @@ pub fn run() -> Result<Server, DfrError> {
     let settings = Settings::new(&args)?;
 
     env_logger::init_from_env(
-        env_logger::Env::new().default_filter_or(settings.log_level.as_str()),
+        env_logger::Env::new().default_filter_or(settings.system.log_level.as_str()),
     );
     info!("Server args: {:?}", args);
     info!("Server settings: {:?}", settings);
@@ -74,7 +74,7 @@ pub fn run() -> Result<Server, DfrError> {
     info!("Server static file path: {:?}", static_file_path);
 
     // Create a path to the trash directory
-    let trash_path = PathBuf::from(&settings.trash_path);
+    let trash_path = PathBuf::from(&settings.system.trash_path);
     if !trash_path.exists() {
         warn!("Trash path does not exist, creating it: {:?}", trash_path);
         // Create the directory and any necessary parent directories.
@@ -84,7 +84,7 @@ pub fn run() -> Result<Server, DfrError> {
 
     let secret_key = Key::generate();
 
-    let database_manager = PoolDatabaseManager::new(&settings.db_path)?;
+    let database_manager = PoolDatabaseManager::new(&settings.system.db_path)?;
     database_manager.create_tables()?;
     // Create shared scan status for scan progress tracking
     let scan_status_data = web::Data::new(SharedScanStatus::new());
@@ -148,15 +148,21 @@ pub fn run() -> Result<Server, DfrError> {
             )
     });
 
-    if settings.enable_ipv6 && check_ipv6_available() {
-        let addr = format!("{}:{}", settings.listen_addr_ipv6, settings.port);
+    if settings.system.enable_ipv6 && check_ipv6_available() {
+        let addr = format!(
+            "{}:{}",
+            settings.system.listen_addr_ipv6, settings.system.port
+        );
         http_server = http_server.bind(addr.as_str())?;
         info!("Server started at http://{}", addr);
     } else {
-        http_server = http_server.bind((settings.listen_addr_ipv4.as_str(), settings.port))?;
+        http_server = http_server.bind((
+            settings.system.listen_addr_ipv4.as_str(),
+            settings.system.port,
+        ))?;
         info!(
             "Server started at http://{}:{}",
-            settings.listen_addr_ipv4, settings.port
+            settings.system.listen_addr_ipv4, settings.system.port
         );
     }
 

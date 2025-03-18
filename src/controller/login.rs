@@ -25,11 +25,11 @@ pub async fn login_account(
     let params = requst_json.into_inner();
     {
         let settings = settings.lock().await;
-        if settings.login_user_name != params.username {
+        if settings.user.login_user_name != params.username {
             error!("Username does not match");
             return Ok(HttpResponse::Forbidden().body("Illegal username or password"));
         }
-        if settings.login_password != params.password {
+        if settings.user.login_password != params.password {
             error!("Password does not match");
             return Ok(HttpResponse::Forbidden().body("Illegal username or password"));
         }
@@ -104,11 +104,11 @@ pub async fn change_password(
         return Ok(HttpResponse::Forbidden().body("Illegal new username or new password"));
     }
 
-    if settings.login_user_name != params.username {
+    if settings.user.login_user_name != params.username {
         error!("Username does not match");
         return Ok(HttpResponse::Forbidden().body("Illegal username or password"));
     }
-    if settings.login_password != params.password {
+    if settings.user.login_password != params.password {
         error!("Password does not match");
         return Ok(HttpResponse::Forbidden().body("Illegal username or password"));
     }
@@ -117,9 +117,9 @@ pub async fn change_password(
         if !new_username.is_empty() {
             info!(
                 "Change username from {} to {}",
-                settings.login_user_name, new_username
+                settings.user.login_user_name, new_username
             );
-            settings.login_user_name = new_username;
+            settings.user.login_user_name = new_username;
         }
     }
 
@@ -127,9 +127,9 @@ pub async fn change_password(
         if !new_password.is_empty() {
             info!(
                 "Change password from {} to {}",
-                settings.login_password, new_password
+                settings.user.login_password, new_password
             );
-            settings.login_password = new_password;
+            settings.user.login_password = new_password;
         }
     }
 

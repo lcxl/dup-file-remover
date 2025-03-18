@@ -57,8 +57,8 @@ pub async fn start_scan(
     let trash_path;
     {
         let settings = settings.lock().await;
-        default_scan_path = settings.default_scan_path.clone();
-        trash_path = std::fs::canonicalize(settings.trash_path.clone())?;
+        default_scan_path = settings.system.default_scan_path.clone();
+        trash_path = std::fs::canonicalize(settings.system.trash_path.clone())?;
     }
     if scan_request.scan_path.len() == 0 || scan_request.scan_path.trim().len() == 0 {
         // Use default scan path if no path is provided
