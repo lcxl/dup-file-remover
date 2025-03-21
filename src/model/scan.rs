@@ -1,28 +1,19 @@
 use std::ops::Deref;
 
 use chrono::{DateTime, Local};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tokio::sync::Mutex;
 use utoipa::ToSchema;
 
 use crate::database::file_info::FileInfo;
-///Scan request structure for initiating a file scan operation.
-#[derive(Deserialize, Serialize, ToSchema, Clone, Debug)]
-pub struct ScanRequest {
-    /// Scan path
-    pub scan_path: String,
-    /// Optional list of file extensions to include in the scan. If not provided, all files will be scanned.
-    pub include_file_extensions: Option<Vec<String>>,
-    /// Minimum file size in bytes to include in the scan. If not provided, there is no minimum size limit.
-    pub min_file_size: Option<u64>,
-    /// Maximum file size in bytes to include in the scan. If not provided, there is no maximum size limit.
-    pub max_file_size: Option<u64>,
-}
+
+use super::settings::ScanSettings;
+
 /// Scan status structure to keep track of the progress and state of a file scan operation.
 #[derive(Serialize, ToSchema, Debug, Clone)]
 pub struct ScanStatus {
     /// Scan request details
-    pub scan_request: Option<ScanRequest>,
+    pub scan_request: Option<ScanSettings>,
     /// Indicates whether the scan has started.
     pub started: bool,
     /// Start time of the scan.

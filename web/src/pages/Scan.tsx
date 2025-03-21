@@ -1,3 +1,4 @@
+import { queryScanSettings } from '@/services/dfr/queryScanSettings';
 import { queryScanStatus } from '@/services/dfr/queryScanStatus';
 import { startScan } from '@/services/dfr/startScan';
 import { stopScan } from '@/services/dfr/stopScan';
@@ -54,7 +55,7 @@ const Admin: React.FC = () => {
     };
   }, []);
   const formRef = useRef<
-    ProFormInstance<API.ScanRequest>
+    ProFormInstance<API.ScanSettings>
   >();
   return (
     <PageContainer>
@@ -104,13 +105,18 @@ const Admin: React.FC = () => {
             marginBottom: 48,
           }}
         />
-        <ProForm<API.ScanRequest>
+        <ProForm<API.ScanSettings>
           disabled={scaning}
           submitter={{
             searchConfig: {
               submitText: '开始扫描',
             }
           }}
+          request={async () => {
+            const response = await queryScanSettings();
+            return response.data!;
+          }
+          }
           onFinish={async (values) => {
             console.log('ProForm values: ', values);
             const val1 = await formRef.current?.validateFields();

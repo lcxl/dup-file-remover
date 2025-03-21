@@ -10,6 +10,8 @@ import * as getNotices from './getNotices';
 import * as listFiles from './listFiles';
 import * as loginAccount from './loginAccount';
 import * as logoutAccount from './logoutAccount';
+import * as queryListSettings from './queryListSettings';
+import * as queryScanSettings from './queryScanSettings';
 import * as queryScanStatus from './queryScanStatus';
 import * as querySettings from './querySettings';
 import * as startScan from './startScan';
@@ -19,6 +21,8 @@ export default {
   getCurrentUser,
   changePassword,
   listFiles,
+  queryListSettings,
+  queryScanSettings,
   startScan,
   queryScanStatus,
   stopScan,

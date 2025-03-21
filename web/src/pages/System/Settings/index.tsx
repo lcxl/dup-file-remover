@@ -18,7 +18,7 @@ const Settings: React.FC = () => {
                 showIcon
             />
             <Divider />
-            <ProForm<API.SettingsModel>
+            <ProForm<API.SystemSettings>
                 onValuesChange={(changeValues) => console.log(changeValues)}
 
                 request={async () => {

@@ -19,9 +19,13 @@ declare namespace API {
 
   type DeleteFileRequest = {
     /** Whether to delete permanently or move to trash */
-    delete_permanently: boolean;
-    /** File path to be deleted */
-    file_path: string;
+    delete_permanently?: any;
+    /** The directory path of file to be deleted */
+    dir_path: string;
+    /** The name of file to be deleted */
+    file_name: string;
+    /** Force delete the file even if it is not duplicates. This option should be used with caution */
+    force_delete?: any;
   };
 
   type FakeCaptcha = {
@@ -51,14 +55,18 @@ declare namespace API {
   };
 
   type FileInfoList = {
-    /** file info list */
+    /** File info list */
     file_info_list: FileInfoWithMd5Count[];
-    /** total file count */
+    /** Total file count */
     total_count: number;
   };
 
   type FileInfoWithMd5Count = {
+    /** File info */
     file_info: FileInfo;
+    /** Optional filter md5 count */
+    filter_md5_count?: any;
+    /** Md5 count */
     md5_count: number;
   };
 
@@ -122,6 +130,45 @@ declare namespace API {
     order_by?: any;
     /** Optional order direction, true for ascending, false for descending. Default is descending. */
     order_asc?: any;
+    /** Optional filter for duplicate files in a specific directory path. If set, if files within this directory duplicate those outside of it, they will be displayed. */
+    filter_dup_file_by_dir_path?: any;
+  };
+
+  type ListSettings = {
+    /** Dir path of the directory containing the file */
+    dir_path?: any;
+    end_created_time?: any;
+    end_modified_time?: any;
+    /** New field for file extension filtering */
+    file_extension?: any;
+    /** Optional file extension list filtering, comma(,) separated values. */
+    file_extension_list?: any;
+    /** File name filtering */
+    file_name?: any;
+    /** Optional filter for duplicate files in a specific directory path. If set, if files within this directory duplicate those outside of it, they will be displayed. */
+    filter_dup_file_by_dir_path?: any;
+    /** Max file size */
+    max_file_size?: number;
+    /** Max file md5 count */
+    max_md5_count?: number;
+    /** MD5 hash of the file content, used for filtering files by their content. */
+    md5?: any;
+    /** Minimum file size */
+    min_file_size?: number;
+    /** Minimum file md5 count */
+    min_md5_count?: number;
+    /** Optional order direction, true for ascending, false for descending. Default is descending. */
+    order_asc?: any;
+    /** Optional order by field. */
+    order_by?: any;
+    /** Page count, must be greater than 0 */
+    page_count: number;
+    /** Page number, start from 1 */
+    page_no: number;
+    /** Optional time range filter for file creation. */
+    start_created_time?: any;
+    /** Optional time range filter for file modification. */
+    start_modified_time?: any;
   };
 
   type LoginParams = {
@@ -180,12 +227,52 @@ declare namespace API {
     success: boolean;
   };
 
+  type RestResponseListSettings = {
+    code: number;
+    /** Query parameters for listing files. */
+    data?: {
+      dir_path?: any;
+      end_created_time?: any;
+      end_modified_time?: any;
+      file_extension?: any;
+      file_extension_list?: any;
+      file_name?: any;
+      filter_dup_file_by_dir_path?: any;
+      max_file_size?: number;
+      max_md5_count?: number;
+      md5?: any;
+      min_file_size?: number;
+      min_md5_count?: number;
+      order_asc?: any;
+      order_by?: any;
+      page_count: number;
+      page_no: number;
+      start_created_time?: any;
+      start_modified_time?: any;
+    };
+    message?: any;
+    success: boolean;
+  };
+
+  type RestResponseScanSettings = {
+    code: number;
+    /** Scan settings */
+    data?: {
+      include_file_extensions?: any;
+      max_file_size?: number;
+      min_file_size?: number;
+      scan_path?: string;
+    };
+    message?: any;
+    success: boolean;
+  };
+
   type RestResponseScanStatus = {
     code: number;
     /** Scan status structure to keep track of the progress and state of a file scan operation. */
     data?: {
       current_file_info?: null | FileInfo;
-      scan_request?: null | ScanRequest;
+      scan_request?: null | ScanSettings;
       scanned_file_count: number;
       start_time?: any;
       started: boolean;
@@ -194,23 +281,26 @@ declare namespace API {
     success: boolean;
   };
 
-  type RestResponseSettingsModel = {
+  type RestResponseSystemSettings = {
     code: number;
+    /** System settings for the application. This struct is used to load and save settings from a configuration file. */
     data?: {
-      config_file_path: string;
-      db_path: string;
-      default_scan_path: string;
-      enable_ipv6: boolean;
-      listen_addr_ipv4: string;
-      listen_addr_ipv6: string;
-      log_level: string;
-      port: number;
+      clear_trash_interval_s?: number;
+      config_file_path?: string;
+      db_path?: string;
+      default_scan_path?: string;
+      enable_ipv6?: boolean;
+      listen_addr_ipv4?: string;
+      listen_addr_ipv6?: string;
+      log_level?: string;
+      port?: number;
+      trash_path?: string;
     };
     message?: any;
     success: boolean;
   };
 
-  type ScanRequest = {
+  type ScanSettings = {
     /** Optional list of file extensions to include in the scan. If not provided, all files will be scanned. */
     include_file_extensions?: any;
     /** Maximum file size in bytes to include in the scan. If not provided, there is no maximum size limit. */
@@ -218,12 +308,12 @@ declare namespace API {
     /** Minimum file size in bytes to include in the scan. If not provided, there is no minimum size limit. */
     min_file_size?: number;
     /** Scan path */
-    scan_path: string;
+    scan_path?: string;
   };
 
   type ScanStatus = {
     current_file_info?: null | FileInfo;
-    scan_request?: null | ScanRequest;
+    scan_request?: null | ScanSettings;
     /** Number of files scanned so far. */
     scanned_file_count: number;
     /** Start time of the scan. */
@@ -232,23 +322,27 @@ declare namespace API {
     started: boolean;
   };
 
-  type SettingsModel = {
+  type SystemSettings = {
+    /** interval in seconds to clear trash */
+    clear_trash_interval_s?: number;
     /** Path to the configuration file. If not specified, a new one will be created in the "conf" directory. */
-    config_file_path: string;
+    config_file_path?: string;
     /** Path to the database file. If not specified, a new one will be created in the "conf" directory. */
-    db_path: string;
+    db_path?: string;
     /** default scan path for the server to start with */
-    default_scan_path: string;
+    default_scan_path?: string;
     /** Enable IPv6 support */
-    enable_ipv6: boolean;
+    enable_ipv6?: boolean;
     /** listen ipv4 address for the server to bind to */
-    listen_addr_ipv4: string;
+    listen_addr_ipv4?: string;
     /** listen ipv6 address for the server to bind to */
-    listen_addr_ipv6: string;
+    listen_addr_ipv6?: string;
     /** access logs are printed with the INFO level so ensure it is enabled by default */
-    log_level: string;
+    log_level?: string;
     /** port number for the server to bind to */
-    port: number;
+    port?: number;
+    /** trash path for deleted files */
+    trash_path?: string;
   };
 
   type UserResponeCurrentUser = {

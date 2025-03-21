@@ -5,7 +5,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::database::file_info::FileInfo;
 use crate::database::sqlite::PoolDatabaseManager;
 use crate::model::common::{ErrorCode, RestResponse};
-use crate::model::scan::{ScanRequest, ScanStatus, SharedScanStatus};
+use crate::model::scan::{ScanStatus, SharedScanStatus};
+use crate::model::settings::ScanSettings;
 use crate::utils::error::DfrError;
 use crate::SharedSettings;
 use actix_web::{get, post, web, Error as AWError, HttpResponse};
@@ -30,10 +31,26 @@ pub async fn query_scan_status(
     Ok(HttpResponse::Ok().json(RestResponse::succeed_with_data(response)))
 }
 
+
+#[utoipa::path(
+    summary = "Get scan settings",
+    responses(
+        (status = 200, description = "Scan settings", body = RestResponse<ScanSettings>),
+    ),
+)]
+#[get("/scan/settings")]
+pub async fn query_scan_settings(
+    settings: web::Data<SharedSettings>,
+) -> Result<HttpResponse, AWError> {
+    
+    let response = settings.lock().await.scan.clone();
+    Ok(HttpResponse::Ok().json(RestResponse::succeed_with_data(response)))
+}
+
 /// Start a new scan. If a scan is already in progress, return a conflict error.
 #[utoipa::path(
     summary = "Start a new file scan",
-    request_body(content = ScanRequest),
+    request_body(content = ScanSettings),
     responses(
         (status = 200, description = "Scan started successfully", body = RestResponse<i64>),
         (status  = 409, description = "Scan already in progress"),
@@ -41,7 +58,7 @@ pub async fn query_scan_status(
 )]
 #[post("/scan/start")]
 pub async fn start_scan(
-    requst_json: web::Json<ScanRequest>,
+    requst_json: web::Json<ScanSettings>,
     db: web::Data<PoolDatabaseManager>,
     scan_status: web::Data<SharedScanStatus>,
     settings: web::Data<SharedSettings>,
@@ -53,16 +70,16 @@ pub async fn start_scan(
     }
     let scan_request = requst_json.into_inner();
     let path;
-    let default_scan_path;
+    let default_scan_settings;
     let trash_path;
     {
         let settings = settings.lock().await;
-        default_scan_path = settings.system.default_scan_path.clone();
         trash_path = std::fs::canonicalize(settings.system.trash_path.clone())?;
     }
     if scan_request.scan_path.len() == 0 || scan_request.scan_path.trim().len() == 0 {
         // Use default scan path if no path is provided
-        path = Path::new(default_scan_path.as_str());
+        default_scan_settings = ScanSettings::default();
+        path = Path::new(default_scan_settings.scan_path.as_str());
     } else {
         path = Path::new(&scan_request.scan_path);
     }
@@ -72,6 +89,12 @@ pub async fn start_scan(
             ErrorCode::FILE_PATH_NOT_FOUND,
             format!("Scan path '{}' does not exist", &scan_request.scan_path),
         )));
+    }
+    {
+        let mut settings =  settings.lock().await;
+        settings.scan = scan_request.clone();
+        settings.save()?;
+
     }
     STOP_SCAN_FLAG.store(false, Ordering::Relaxed);
     tokio::spawn(async move {
@@ -114,7 +137,7 @@ pub async fn stop_scan(scan_status: web::Data<SharedScanStatus>) -> Result<HttpR
 
 /// Scan all files in a directory and its subdirectories.
 pub async fn scan_all_files(
-    scan_request: &ScanRequest,
+    scan_request: &ScanSettings,
     db: &PoolDatabaseManager,
     scan_status: &SharedScanStatus,
     trash_path: PathBuf,
@@ -155,7 +178,7 @@ pub async fn scan_all_files(
 /// Scan all files in a directory and its subdirectories.
 async fn _scan_all_files(
     current_path: &Path,
-    scan_request: &ScanRequest,
+    scan_request: &ScanSettings,
     scan_version: u64,
     db: &PoolDatabaseManager,
     scan_status: &SharedScanStatus,
@@ -201,7 +224,7 @@ async fn _scan_all_files(
 }
 
 async fn scan_file(
-    scan_request: &ScanRequest,
+    scan_request: &ScanSettings,
     file_path: &Path,
     scan_version: u64,
     db: &PoolDatabaseManager,

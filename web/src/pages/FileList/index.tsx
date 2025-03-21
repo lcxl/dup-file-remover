@@ -2,7 +2,7 @@ import { listFiles } from '@/services/dfr/listFiles';
 import { deleteFile } from '@/services/dfr/deleteFile';
 import { formatSize } from '@/utils/format_utils';
 import { SearchOutlined } from '@ant-design/icons';
-import type { ActionType, ProColumns, ProDescriptionsItemProps } from '@ant-design/pro-components';
+import type { ActionType, ProColumns, ProDescriptionsItemProps, ProFormInstance } from '@ant-design/pro-components';
 import {
   FooterToolbar,
   ModalForm,
@@ -15,6 +15,7 @@ import {
 import { FormattedMessage, useIntl, history } from '@umijs/max';
 import { Button, Drawer, Input, message, Select, SelectProps } from 'antd';
 import React, { useRef, useState } from 'react';
+import { queryListSettings } from '@/services/dfr/queryListSettings';
 
 
 /**
@@ -29,7 +30,8 @@ const handleRemove = async (selectedRows: API.FileInfoWithMd5Count[]) => {
   try {
     const request: API.DeleteFileRequest = {
       delete_permanently: false,
-      file_path: "xxx",
+      file_name: "xxx",
+      dir_path: "yyy",
     };
     //FIXME
     await deleteFile(request);
@@ -49,7 +51,7 @@ const TableList: React.FC = () => {
    * @zh-CN 分布更新窗口的弹窗
    * */
   const [updateModalOpen, handleUpdateModalOpen] = useState<boolean>(false);
-
+  const formRef = useRef<ProFormInstance>();
   const [showDetail, setShowDetail] = useState<boolean>(false);
 
   const actionRef = useRef<ActionType>();
@@ -241,7 +243,7 @@ const TableList: React.FC = () => {
       hideInDescriptions: true,
       dataIndex: ["md5_count"],
       valueType: 'digitRange',
-      initialValue: [2, null],
+      //initialValue: [2, null],
     },
     {
       title: <FormattedMessage id="pages.searchTable.titleOption" defaultMessage="Operating" />,
@@ -296,6 +298,47 @@ const TableList: React.FC = () => {
             <SearchOutlined /> <FormattedMessage id="pages.searchTable.startSearch" defaultMessage="Start search" />
           </Button>,
         ]}
+        //formRef={formRef}
+        form={{
+          request: async () => {
+            const response = await queryListSettings();
+            const form_params = response.data!;
+
+            let search_file_modified_time: string[] | undefined = undefined;
+            if (form_params.start_modified_time != null || form_params.start_modified_time != null) {
+              search_file_modified_time = [];
+              search_file_modified_time.push(form_params.start_modified_time);
+              search_file_modified_time.push(form_params.end_modified_time);
+            }
+
+
+            let search_md5_count: (number | undefined)[] = [];
+            search_md5_count.push(form_params.min_md5_count);
+            search_md5_count.push(form_params.max_md5_count);
+
+            let file_extention_list: string[] | undefined = undefined;
+            if (form_params.file_extension_list != null) {
+              file_extention_list = form_params.file_extension_list.split(',');
+            }
+
+            let search_file_size: (number | undefined)[] = [];
+            search_file_size.push(form_params.min_file_size);
+            search_file_size.push(form_params.max_file_size);
+
+            let file_info: API.FileInfo | undefined = undefined;
+            file_info = {
+              file_name: form_params.file_name,
+              dir_path: form_params.dir_path
+            };
+            return {
+              file_info,
+              search_file_modified_time,
+              search_md5_count,
+              file_extention_list,
+              search_file_size,
+            };
+          },
+        }}
         request={async (
           // 第一个参数 params 查询表单和 params 参数的结合
           // 第一个参数中一定会有 pageSize 和  current ，这两个参数是 antd 的规范

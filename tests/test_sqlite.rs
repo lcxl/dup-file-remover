@@ -1,7 +1,7 @@
 use chrono::Local;
 use dup_file_remover::{
     database::{file_info::FileInfo, sqlite::PoolDatabaseManager},
-    model::files::QueryListParams,
+    model::settings::ListSettings,
     utils::error::DfrError,
 };
 
@@ -21,7 +21,7 @@ fn test_create_sqlite() -> Result<(), DfrError> {
 #[test]
 fn test_list_files() -> Result<(), DfrError> {
     let database_manager = PoolDatabaseManager::new("dfremover.db")?;
-    let query_list_params = QueryListParams {
+    let query_list_params = ListSettings {
         page_no: 1,
         page_count: 100,
         min_file_size: Some(100),

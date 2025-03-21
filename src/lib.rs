@@ -18,9 +18,9 @@ use clap::Parser;
 use log::{info, warn};
 
 use controller::{
-    files::{delete_file, list_files},
+    files::{delete_file, list_files, query_list_settings},
     login::{change_password, get_captcha, login_account, logout_account},
-    scan::{query_scan_status, start_scan, stop_scan},
+    scan::{query_scan_settings, query_scan_status, start_scan, stop_scan},
     settings::{query_settings, update_settings},
     user::{get_current_user, get_notices, reject_anonymous_users},
 };
@@ -129,7 +129,9 @@ pub fn run() -> Result<Server, DfrError> {
                     .service(delete_file)
                     .service(change_password)
                     .service(query_settings)
-                    .service(update_settings),
+                    .service(update_settings)
+                    .service(query_scan_settings)
+                    .service(query_list_settings),
             )
             .openapi_service(|api| {
                 SwaggerUi::new("/swagger-ui/{_:.*}").url("/api/openapi.json", api)

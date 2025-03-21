@@ -1,11 +1,11 @@
 use std::{fs, path::PathBuf};
 
+use chrono::{DateTime, Local};
 use ::serde::{Deserialize, Serialize};
 use clap::Parser;
 use config::{Config, Environment, File};
 use log::info;
-use toml_edit::{DocumentMut, Item, Table};
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 use crate::utils::error::DfrError;
 
@@ -52,6 +52,62 @@ pub struct UserSettings {
     pub login_password: String,
 }
 
+/// Scan settings
+#[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
+#[serde(default)]
+pub struct ScanSettings {
+    /// Scan path
+    pub scan_path: String,
+    /// Optional list of file extensions to include in the scan. If not provided, all files will be scanned.
+    pub include_file_extensions: Option<Vec<String>>,
+    /// Minimum file size in bytes to include in the scan. If not provided, there is no minimum size limit.
+    pub min_file_size: Option<u64>,
+    /// Maximum file size in bytes to include in the scan. If not provided, there is no maximum size limit.
+    pub max_file_size: Option<u64>,
+}
+
+/// Query parameters for listing files.
+#[derive(Clone, Debug, Deserialize, Serialize, IntoParams, ToSchema)]
+pub struct ListSettings {
+    /// Page number, start from 1
+    pub page_no: i64,
+    /// Page count, must be greater than 0
+    pub page_count: i64,
+    /// Minimum file size
+    pub min_file_size: Option<i64>,
+    /// Max file size
+    pub max_file_size: Option<i64>,
+    /// Dir path of the directory containing the file
+    pub dir_path: Option<String>,
+    /// File name filtering
+    pub file_name: Option<String>,
+    /// New field for file extension filtering
+    pub file_extension: Option<String>,
+    /// Optional file extension list filtering, comma(,) separated values.
+    pub file_extension_list: Option<String>,
+    /// MD5 hash of the file content, used for filtering files by their content.
+    pub md5: Option<String>,
+    /// Optional time range filter for file creation.
+    pub start_created_time: Option<DateTime<Local>>,
+    pub end_created_time: Option<DateTime<Local>>,
+    /// Optional time range filter for file modification.
+    pub start_modified_time: Option<DateTime<Local>>,
+    pub end_modified_time: Option<DateTime<Local>>,
+
+    /// Minimum file md5 count
+    pub min_md5_count: Option<i64>,
+    /// Max file md5 count
+    pub max_md5_count: Option<i64>,
+    /// Optional order by field.
+    pub order_by: Option<String>,
+    /// Optional order direction, true for ascending, false for descending. Default is descending.
+    pub order_asc: Option<bool>,
+
+    /// Optional filter for duplicate files in a specific directory path. If set, if files within this directory duplicate those outside of it, they will be displayed.
+    pub filter_dup_file_by_dir_path: Option<bool>,
+}
+
+
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 #[serde(default)]
 pub struct Settings {
@@ -59,6 +115,10 @@ pub struct Settings {
     pub system: SystemSettings,
     /// User settings
     pub user: UserSettings,
+    /// Scan settings
+    pub scan: ScanSettings,
+    /// List settings
+    pub list: ListSettings,
 }
 
 impl Default for SystemSettings {
@@ -87,6 +147,42 @@ impl Default for UserSettings {
     }
 }
 
+impl Default for ScanSettings {
+    fn default() -> Self {
+        Self {
+            scan_path: "data/".to_string(),
+            include_file_extensions: None,
+            min_file_size: None,
+            max_file_size: None,
+        }
+    }
+}
+
+impl Default for ListSettings {
+    fn default() -> Self {
+        Self {
+            page_no: 1,
+            page_count: 20,
+            min_file_size: None,
+            max_file_size: None,
+            dir_path: None,
+            file_name: None,
+            file_extension: None,
+            file_extension_list: None,
+            md5: None,
+            start_created_time: None,
+            end_created_time: None,
+            start_modified_time: None,
+            end_modified_time: None,
+            min_md5_count: Some(2),
+            max_md5_count: None,
+            order_by: None,
+            order_asc: None,
+            filter_dup_file_by_dir_path: None,
+        }
+    }
+}
+
 impl Settings {
     pub fn new(args: &Args) -> Result<Self, DfrError> {
         //let config_file_path = PathBuf::from(args.config_file_path.as_str());
@@ -105,86 +201,12 @@ impl Settings {
         Ok(settings)
     }
 
-    fn save_system(&self, system: &SystemSettings, toml_doc: &mut DocumentMut) {
-        if !toml_doc.contains_table("system") {
-            toml_doc.insert("system", Item::Table(Table::new()));
-        }
-        let system_table = toml_doc["system"].as_table_mut().unwrap();
-        let default_settings = SystemSettings::default();
-
-        if system.db_path != default_settings.db_path || system_table.contains_key("db_path") {
-            system_table["db_path"] = toml_edit::value(system.db_path.clone());
-        }
-        if system.enable_ipv6 != default_settings.enable_ipv6
-            || system_table.contains_key("enable_ipv6")
-        {
-            system_table["enable_ipv6"] = toml_edit::value(system.enable_ipv6);
-        }
-        if system.listen_addr_ipv4 != default_settings.listen_addr_ipv4
-            || system_table.contains_key("listen_addr_ipv4")
-        {
-            system_table["listen_addr_ipv4"] = toml_edit::value(system.listen_addr_ipv4.clone());
-        }
-        if system.listen_addr_ipv6 != default_settings.listen_addr_ipv6
-            || system_table.contains_key("listen_addr_ipv6")
-        {
-            system_table["listen_addr_ipv6"] = toml_edit::value(system.listen_addr_ipv6.clone());
-        }
-        if system.port != default_settings.port || system_table.contains_key("port") {
-            system_table["port"] = toml_edit::value(system.port as i64);
-        }
-        if system.log_level != default_settings.log_level || system_table.contains_key("log_level")
-        {
-            system_table["log_level"] = toml_edit::value(system.log_level.clone());
-        }
-        if system.default_scan_path != default_settings.default_scan_path
-            || system_table.contains_key("default_scan_path")
-        {
-            system_table["default_scan_path"] = toml_edit::value(system.default_scan_path.clone());
-        }
-        if system.clear_trash_interval_s != default_settings.clear_trash_interval_s
-            || system_table.contains_key("clear_trash_interval_s")
-        {
-            system_table["clear_trash_interval_s"] =
-                toml_edit::value(system.clear_trash_interval_s as i64);
-        }
-        if system.trash_path != default_settings.trash_path
-            || system_table.contains_key("trash_path")
-        {
-            system_table["trash_path"] = toml_edit::value(system.trash_path.clone());
-        }
-    }
-
-    fn save_user(&self, user: &UserSettings, toml_doc: &mut DocumentMut) {
-        if !toml_doc.contains_table("user") {
-            toml_doc.insert("user", Item::Table(Table::new()));
-        }
-        let user_table = toml_doc["user"].as_table_mut().unwrap();
-        let default_settings = UserSettings::default(); // Reset default settings to avoid conflicts
-
-        if user.login_user_name != default_settings.login_user_name
-            || user_table.contains_key("login_user_name")
-        {
-            user_table["login_user_name"] = toml_edit::value(user.login_user_name.clone());
-        }
-        if user.login_password != default_settings.login_password
-            || user_table.contains_key("login_password")
-        {
-            user_table["login_password"] = toml_edit::value(user.login_password.clone());
-        }
-    }
-
     pub fn save(&self) -> Result<(), DfrError> {
         let mut config_file_path = PathBuf::from(self.system.config_file_path.as_str());
         config_file_path.set_extension("toml");
         // Save settings to config file
-        let config_context = fs::read_to_string(&config_file_path)?;
-        let mut toml_doc = config_context.parse::<DocumentMut>()?;
-        // Update system settings
-        self.save_system(&self.system, &mut toml_doc);
-        self.save_user(&self.user, &mut toml_doc);
+        let toml_str = toml::to_string(self).unwrap();
 
-        let toml_str = toml_doc.to_string();
         info!(
             "Saving config to: {}, content: {}",
             config_file_path.display(),

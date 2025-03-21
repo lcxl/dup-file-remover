@@ -5,8 +5,7 @@ use log::{error, info};
 use rusqlite::{params_from_iter, Connection, Params, Result, ToSql};
 
 use crate::{
-    model::files::QueryListParams,
-    utils::{self, error::DfrError},
+    model::settings::ListSettings, utils::{self, error::DfrError}
 };
 
 use super::file_info::{FileInfo, FileInfoList, FileInfoWithMd5Count, InodeInfo};
@@ -122,7 +121,8 @@ impl DatabaseManager {
             remove_time DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(dir_path, file_name)
         );
-        CREATE INDEX IF NOT EXISTS idx_file_name ON file_info (file_name);
+        CREATE INDEX IF NOT EXISTS idx_file_name ON trash_info (file_name);
+        CREATE INDEX IF NOT EXISTS idx_md5 ON trash_info (md5);
         ";
         tx.execute_batch(sql)?;
         tx.commit()?;
@@ -380,7 +380,7 @@ impl DatabaseManager {
 
     pub fn list_files(
         &self,
-        query_list_params: &QueryListParams,
+        query_list_params: &ListSettings,
     ) -> Result<FileInfoList, DfrError> {
         let mut conn = self.pool.get().unwrap();
         let mut params: Vec<Arc<dyn ToSql>> = Vec::new();
