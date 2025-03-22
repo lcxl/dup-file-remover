@@ -31,7 +31,6 @@ pub async fn query_scan_status(
     Ok(HttpResponse::Ok().json(RestResponse::succeed_with_data(response)))
 }
 
-
 #[utoipa::path(
     summary = "Get scan settings",
     responses(
@@ -42,7 +41,6 @@ pub async fn query_scan_status(
 pub async fn query_scan_settings(
     settings: web::Data<SharedSettings>,
 ) -> Result<HttpResponse, AWError> {
-    
     let response = settings.lock().await.scan.clone();
     Ok(HttpResponse::Ok().json(RestResponse::succeed_with_data(response)))
 }
@@ -91,10 +89,9 @@ pub async fn start_scan(
         )));
     }
     {
-        let mut settings =  settings.lock().await;
+        let mut settings = settings.lock().await;
         settings.scan = scan_request.clone();
         settings.save()?;
-
     }
     STOP_SCAN_FLAG.store(false, Ordering::Relaxed);
     tokio::spawn(async move {
@@ -184,41 +181,52 @@ async fn _scan_all_files(
     scan_status: &SharedScanStatus,
     trash_path: &Path,
 ) -> Result<(), DfrError> {
-    if current_path.is_dir() {
-        if trash_path == current_path {
-            info!("Ignore trash path: {:?}", trash_path);
-            return Ok(());
+    if !current_path.is_dir() {
+        scan_file(scan_request, current_path, scan_version, db, scan_status).await?;
+        return Ok(());
+    }
+
+    if trash_path == current_path {
+        info!("Ignore trash path: {:?}", trash_path);
+        return Ok(());
+    }
+    let mut queue = vec![];
+    queue.push(PathBuf::from(current_path));
+    while let Some(current_path) = queue.pop() {
+        let entries_result = tokio::fs::read_dir(current_path.as_path()).await;
+        if entries_result.is_err() {
+            let err = entries_result.err().unwrap();
+            error!("Failed to read dir {:?}: {:?}", current_path, err);
+            continue;
         }
-        let mut entries = tokio::fs::read_dir(current_path).await?;
+        let mut entries = entries_result?;
         while let Some(entry) = entries.next_entry().await? {
             if STOP_SCAN_FLAG.load(Ordering::Acquire) {
                 info!("Received stop scan flag, stop scanning");
                 db.remove_deleted_inode()?;
                 return Ok(());
             }
-            debug!("{:?}", entry.path()); // For demonstration purposes, print the path of each file/directory.
             if entry.path().is_dir() {
                 let sub_path = entry.path();
-                let list_task = Box::pin(_scan_all_files(
-                    &sub_path,
-                    scan_request,
-                    scan_version,
-                    db,
-                    scan_status,
-                    trash_path,
-                ));
-                list_task.await?;
+                queue.push(sub_path);
+                debug!("Push back dir {:?} to queue", entry.path());
             } else {
-                scan_file(scan_request, &entry.path(), scan_version, db, scan_status).await?;
+                let result =
+                    scan_file(scan_request, &entry.path(), scan_version, db, scan_status).await;
+                if let Some(err) = result.err() {
+                    error!("Failed to scan file {:?}: {:?}", entry.path(), err);
+                }
             }
         }
         //remove deleted files from db if path is directory
         db.remove_deleted_files(
-            current_path.to_string_lossy().to_string().as_str(),
+            current_path
+                .as_path()
+                .to_string_lossy()
+                .to_string()
+                .as_str(),
             scan_version,
         )?;
-    } else {
-        scan_file(scan_request, current_path, scan_version, db, scan_status).await?;
     }
     Ok(())
 }
