@@ -1,6 +1,7 @@
 use std::os::linux::fs::MetadataExt;
 
 use chrono::{DateTime, Local};
+use log::debug;
 use md5::{Digest, Md5};
 use serde::Serialize;
 use utoipa::ToSchema;
@@ -107,12 +108,19 @@ impl FileInfo {
 
     pub fn update_md5(&mut self) -> Result<(), DfrError> {
         let file_path = format!("{}/{}", self.dir_path, self.file_name);
+        debug!("begin update md5: {}/{}", self.file_path, self.file_name);
         self.inode_info.md5 = Some(format!(
             "{:x}",
             Md5::new()
                 .chain_update(std::fs::read(file_path)?)
                 .finalize()
         ));
+        debug!(
+            "{}/{} md5: {}",
+            self.file_path,
+            self.file_name,
+            self.inode_info.md5.as_ref().unwrap()
+        );
         Ok(())
     }
 
