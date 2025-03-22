@@ -1,4 +1,8 @@
-use std::os::linux::fs::MetadataExt;
+use std::{
+    fs::File,
+    io::{self},
+    os::linux::fs::MetadataExt,
+};
 
 use chrono::{DateTime, Local};
 use log::debug;
@@ -109,18 +113,17 @@ impl FileInfo {
     pub fn update_md5(&mut self) -> Result<(), DfrError> {
         let file_path = format!("{}/{}", self.dir_path, self.file_name);
         debug!("begin update md5: {}/{}", self.file_path, self.file_name);
-        self.inode_info.md5 = Some(format!(
-            "{:x}",
-            Md5::new()
-                .chain_update(std::fs::read(file_path)?)
-                .finalize()
-        ));
+
+        let mut file = File::open(file_path).unwrap();
+        let mut hasher = Md5::new();
+        let n = io::copy(&mut file, &mut hasher)?;
+        let hash = hasher.finalize();
+        let hash_str = format!("{:x}", hash);
         debug!(
-            "{}/{} md5: {}",
-            self.file_path,
-            self.file_name,
-            self.inode_info.md5.as_ref().unwrap()
+            "{}/{}(total size: {}) md5: {}",
+            self.file_path, self.file_name, n, hash_str,
         );
+        self.inode_info.md5 = Some(hash_str);
         Ok(())
     }
 
