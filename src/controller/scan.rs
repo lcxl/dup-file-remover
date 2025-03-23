@@ -308,7 +308,7 @@ async fn scan_file(
     }
 
     // update file md5 and insert into db
-    file_info.update_md5()?;
+    file_info.update_md5().await?;
     db.insert_file_info(&file_info)?;
     Ok(())
 }

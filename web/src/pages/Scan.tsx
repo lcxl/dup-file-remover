@@ -36,7 +36,7 @@ const Admin: React.FC = () => {
       // console.info("定时器执行中...")
       var timeout = 3000; // 设置定时器间隔为 3 秒
       if (scaningRef.current) { // 只有在扫描进行中时才执行获取进度的操作
-        timeout = 100; // 如果扫描进行中，则将定时器间隔设置为 100 毫秒
+        timeout = 200; // 如果扫描进行中，则将定时器间隔设置为 200 毫秒
         const scan_status = await queryScanStatus();
         console.log('当前进度:', scan_status);
         setScanStatus(scan_status);

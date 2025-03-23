@@ -1,13 +1,13 @@
-use std::{
-    fs::File,
-    io::{self},
-    os::linux::fs::MetadataExt,
-};
+use std::os::linux::fs::MetadataExt;
 
 use chrono::{DateTime, Local};
 use log::debug;
 use md5::{Digest, Md5};
 use serde::Serialize;
+use tokio::{
+    fs::File,
+    io::{AsyncReadExt, BufReader},
+};
 use utoipa::ToSchema;
 
 use crate::utils::error::DfrError;
@@ -109,19 +109,28 @@ impl FileInfo {
             version,
         })
     }
-
-    pub fn update_md5(&mut self) -> Result<(), DfrError> {
+    /// update file hash async
+    pub async fn update_md5(&mut self) -> Result<(), DfrError> {
         let file_path = format!("{}/{}", self.dir_path, self.file_name);
         debug!("begin update md5: {}/{}", self.file_path, self.file_name);
 
-        let mut file = File::open(file_path).unwrap();
+        let file = File::open(file_path).await?;
         let mut hasher = Md5::new();
-        let n = io::copy(&mut file, &mut hasher)?;
+        let mut reader = BufReader::new(file);
+        let mut buffer = [0; 8192];
+        let mut file_sizes = 0;
+        while let Ok(n) = reader.read(&mut buffer).await {
+            if n == 0 {
+                break;
+            }
+            file_sizes += n;
+            hasher.update(&buffer[..n]);
+        }
         let hash = hasher.finalize();
         let hash_str = format!("{:x}", hash);
         debug!(
             "{}/{}(total size: {}) md5: {}",
-            self.file_path, self.file_name, n, hash_str,
+            self.file_path, self.file_name, file_sizes, hash_str,
         );
         self.inode_info.md5 = Some(hash_str);
         Ok(())
