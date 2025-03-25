@@ -282,13 +282,13 @@ async fn scan_file(
         Ok(db_file_info) => {
             if db_file_info.inode_info == file_info.inode_info {
                 debug!(
-                "File '{}' already exists and is same in database, update version from {} to {}",
-                file_info.file_path, db_file_info.version, file_info.version
-            );
+                    "File '{}' already exists and is same in database, update version from {} to {}",
+                    file_info.file_path, db_file_info.version, file_info.version
+                );
                 db.update_version(&file_info)?;
                 return Ok(());
             } else {
-                info!("File '{}' is changed, need to update", file_info.file_path);
+                info!("File '{}' is changed, need to update, db inode info: {:?}, current inode info: {:?}", file_info.file_path, db_file_info.inode_info , file_info.inode_info);
             }
         }
         Err(error) => match error {
