@@ -113,6 +113,7 @@ impl DatabaseManager {
         );
         CREATE INDEX IF NOT EXISTS idx_file_name ON file_info (file_name);
         CREATE INDEX IF NOT EXISTS idx_file_extension ON file_info (file_extension);
+        CREATE INDEX IF NOT EXISTS idx_version_dir_path ON file_info (version, dir_path);
 
         CREATE TABLE IF NOT EXISTS trash_info (
             md5 TEXT NOT NULL,
@@ -358,6 +359,22 @@ impl DatabaseManager {
             info!(
                 "deleted {} rows in file_info by dir_path '{}' and version '{}'",
                 update_rows, dir_path, version
+            );
+        }
+        Ok(())
+    }
+
+    /// remove not existed files from database based on version
+    pub fn remove_deleted_files_by_version(&self, version: u64) -> Result<()> {
+        let mut conn = self.pool.get().unwrap();
+        let tx = conn.transaction()?;
+        let sql = "DELETE FROM file_info WHERE version != ?";
+        let update_rows = tx.execute(sql, [version])?;
+        tx.commit()?;
+        if update_rows > 0 {
+            info!(
+                "deleted {} rows in file_info by version '{}'",
+                update_rows, version
             );
         }
         Ok(())

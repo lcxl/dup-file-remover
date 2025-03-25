@@ -34,8 +34,6 @@ pub struct SystemSettings {
     pub listen_addr_ipv6: String,
     /// access logs are printed with the INFO level so ensure it is enabled by default
     pub log_level: String,
-    /// default scan path for the server to start with
-    pub default_scan_path: String,
     /// interval in seconds to clear trash
     pub clear_trash_interval_s: u32,
     /// trash path for deleted files
@@ -131,7 +129,6 @@ impl Default for SystemSettings {
             listen_addr_ipv4: "0.0.0.0".to_string(),
             listen_addr_ipv6: "::".to_string(),
             log_level: "info".to_string(),
-            default_scan_path: "data/".to_string(),
             clear_trash_interval_s: 2592000, // 30 days in seconds
             trash_path: "data/dfr_trash".to_string(),
         }

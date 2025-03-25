@@ -5,7 +5,7 @@ use crate::{
     database::{file_info::FileInfoList, sqlite::PoolDatabaseManager},
     model::{
         common::{ErrorCode, RestResponse},
-        files::DeleteFileRequest, settings::ListSettings,
+        files::{DeleteFileRequest, DeleteFilesRequest}, settings::ListSettings,
     }, SharedSettings,
 };
 
@@ -54,6 +54,7 @@ pub async fn list_files(
 
 #[utoipa::path(
     summary = "Delete a file",
+    request_body(content = DeleteFileRequest),
     responses(
         (status = 200, description = "Delete file successfully"),
         (status = 400, description = "Bad request"),
@@ -66,5 +67,24 @@ pub async fn delete_file(
 ) -> Result<HttpResponse, AWError> {
     let delete_file_request = requst_json.into_inner();
     info!("Delete file {} in {} successfully", delete_file_request.file_name, delete_file_request.dir_path);
+    Ok(HttpResponse::Ok().finish())
+}
+
+
+#[utoipa::path(
+    summary = "Delete files",
+    request_body(content = DeleteFilesRequest),
+    responses(
+        (status = 200, description = "Delete file successfully"),
+        (status = 400, description = "Bad request"),
+        (status = 501, description = "Not implemented"),
+    ),
+)]
+#[delete("files")]
+pub async fn delete_files(
+    requst_json: web::Json<DeleteFilesRequest>,
+) -> Result<HttpResponse, AWError> {
+    let delete_file_request = requst_json.into_inner();
+    info!("Delete files {:?} successfully", delete_file_request.files);
     Ok(HttpResponse::Ok().finish())
 }

@@ -69,9 +69,15 @@ const Settings: React.FC = () => {
                 />
                 <ProFormText
                     name="listen_addr_ipv6"
-                    label="ipv6监听地址（重启生效）" />
+                    label={intl.formatMessage({
+                        id: "pages.system.settings.listenAddrIpv6",
+                        defaultMessage: "ipv6监听地址（重启生效）"
+                    })} />
                 <ProFormDigit
-                    label="端口号（重启生效）"
+                    label={intl.formatMessage({
+                        id: "pages.system.settings.port",
+                        defaultMessage: "端口号（重启生效）"
+                    })}
                     name="port"
                     min={1}
                     max={65535}
@@ -79,7 +85,12 @@ const Settings: React.FC = () => {
                 />
                 <ProFormSelect
                     name="log_level"
-                    label="日志级别(重启生效)"
+                    label={
+                        intl.formatMessage({
+                            id: "pages.system.settings.logLevel",
+                            defaultMessage: "日志级别(重启生效)",
+                        })
+                    }
                     valueEnum={{
                         trace: "TRACE",
                         debug: 'DEBUG',
@@ -90,9 +101,6 @@ const Settings: React.FC = () => {
                     placeholder="请指定日志级别"
                     rules={[{ required: true, message: '请指定日志级别!' }]}
                 />
-                <ProFormText
-                    name="default_scan_path"
-                    label="默认扫描路径" />
             </ProForm>
         </PageContainer>
 

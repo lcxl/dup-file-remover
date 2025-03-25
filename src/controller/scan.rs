@@ -163,7 +163,7 @@ pub async fn scan_all_files(
         trash_path.as_path(),
     )
     .await;
-
+    db.remove_deleted_inode()?;
     {
         let mut status = scan_status.lock().await;
         status.started = false;
@@ -203,7 +203,6 @@ async fn _scan_all_files(
         while let Some(entry) = entries.next_entry().await? {
             if STOP_SCAN_FLAG.load(Ordering::Acquire) {
                 info!("Received stop scan flag, stop scanning");
-                db.remove_deleted_inode()?;
                 return Ok(());
             }
             if entry.path().is_dir() {
@@ -228,6 +227,8 @@ async fn _scan_all_files(
             scan_version,
         )?;
     }
+    //remove deleted/filterd files from db
+    db.remove_deleted_files_by_version(scan_version)?;
     Ok(())
 }
 

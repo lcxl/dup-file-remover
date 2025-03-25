@@ -17,6 +17,13 @@ declare namespace API {
     userid?: any;
   };
 
+  type DeleteFilePath = {
+    /** The directory path of file to be deleted */
+    dir_path: string;
+    /** The name of file to be deleted */
+    file_name: string;
+  };
+
   type DeleteFileRequest = {
     /** Whether to delete permanently or move to trash */
     delete_permanently?: any;
@@ -24,6 +31,15 @@ declare namespace API {
     dir_path: string;
     /** The name of file to be deleted */
     file_name: string;
+    /** Force delete the file even if it is not duplicates. This option should be used with caution */
+    force_delete?: any;
+  };
+
+  type DeleteFilesRequest = {
+    /** Whether to delete permanently or move to trash */
+    delete_permanently?: any;
+    /** The directory path of file to be deleted */
+    files: DeleteFilePath[];
     /** Force delete the file even if it is not duplicates. This option should be used with caution */
     force_delete?: any;
   };
@@ -288,7 +304,6 @@ declare namespace API {
       clear_trash_interval_s?: number;
       config_file_path?: string;
       db_path?: string;
-      default_scan_path?: string;
       enable_ipv6?: boolean;
       listen_addr_ipv4?: string;
       listen_addr_ipv6?: string;
@@ -329,8 +344,6 @@ declare namespace API {
     config_file_path?: string;
     /** Path to the database file. If not specified, a new one will be created in the "conf" directory. */
     db_path?: string;
-    /** default scan path for the server to start with */
-    default_scan_path?: string;
     /** Enable IPv6 support */
     enable_ipv6?: boolean;
     /** listen ipv4 address for the server to bind to */

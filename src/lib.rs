@@ -18,7 +18,7 @@ use clap::Parser;
 use log::{info, warn};
 
 use controller::{
-    files::{delete_file, list_files, query_list_settings},
+    files::{delete_file, delete_files, list_files, query_list_settings},
     login::{change_password, get_captcha, login_account, logout_account},
     scan::{query_scan_settings, query_scan_status, start_scan, stop_scan},
     settings::{query_settings, update_settings},
@@ -127,6 +127,7 @@ pub fn run() -> Result<Server, DfrError> {
                     .service(query_scan_status)
                     .service(list_files)
                     .service(delete_file)
+                    .service(delete_files)
                     .service(change_password)
                     .service(query_settings)
                     .service(update_settings)

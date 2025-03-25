@@ -1,6 +1,5 @@
 export default {
-  'pages.layouts.userLayout.title':
-    'Ant Design is the most influential web design specification in Xihu district',
+  'pages.layouts.userLayout.title': 'Clean up large amounts of duplicate files with ease',
   'pages.login.accountLogin.tab': 'Account Login',
   'pages.login.accountLogin.errorMessage': 'Incorrect username/password',
   'pages.login.failure': 'Login failed, please try again!',
@@ -76,7 +75,10 @@ export default {
   'pages.searchTable.searchFileSize': 'File size range',
   'pages.searchTable.startSearch': 'Start search',
   'pages.system.settings.configFilePath': 'Configuration file path (cannot be changed)',
-  'pages.system.settings.dbPath': 'sqlite configuration address (takes effect after restart, all scanned data will be lost after change)',
+  'pages.system.settings.dbPath': 'Sqlite configuration address (takes effect after restart, all scanned data will be lost after change)',
   'pages.system.settings.enableIpv6': 'Enable ipv6 (takes effect after restart)',
-  'pages.system.settings.listenAddrIpv4': 'ipv4 listening address (takes effect after restart)',
+  'pages.system.settings.listenAddrIpv4': 'Ipv4 listening address (takes effect after restart)',
+  'pages.system.settings.listenAddrIpv6': 'Ipv6 listening address (takes effect after restart)',
+  'pages.system.settings.port': 'Port number (takes effect after restart)',
+  'pages.system.settings.logLevel': 'Log level (takes effect after restart)',
 };

@@ -92,19 +92,6 @@ const Admin: React.FC = () => {
 
       </Card>
       <Card>
-        <Alert
-          message={intl.formatMessage({
-            id: 'pages.welcome.alertMessage',
-            defaultMessage: 'Faster and stronger heavy-duty components have been released.',
-          })}
-          type="success"
-          showIcon
-          banner
-          style={{
-            margin: -12,
-            marginBottom: 48,
-          }}
-        />
         <ProForm<API.ScanSettings>
           disabled={scaning}
           submitter={{

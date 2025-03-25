@@ -4,6 +4,7 @@
 // API 唯一标识：
 import * as changePassword from './changePassword';
 import * as deleteFile from './deleteFile';
+import * as deleteFiles from './deleteFiles';
 import * as getCaptcha from './getCaptcha';
 import * as getCurrentUser from './getCurrentUser';
 import * as getNotices from './getNotices';
@@ -29,6 +30,7 @@ export default {
   querySettings,
   updateSettings,
   deleteFile,
+  deleteFiles,
   loginAccount,
   getCaptcha,
   logoutAccount,

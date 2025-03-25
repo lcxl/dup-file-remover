@@ -1,5 +1,5 @@
 export default {
-  'pages.layouts.userLayout.title': 'Ant Design 是西湖区最具影响力的 Web 设计规范',
+  'pages.layouts.userLayout.title': '清理大量重复文件的得力助手', 
   'pages.login.accountLogin.tab': '账户密码登录',
   'pages.login.accountLogin.errorMessage': '错误的用户名和密码',
   'pages.login.failure': '登录失败，请重试！',
@@ -73,7 +73,10 @@ export default {
   'pages.searchTable.searchFileSize': '文件大小范围',
   'pages.searchTable.startSearch': '开始扫描',
   'pages.system.settings.configFilePath': '配置文件路径（不可更改）',
-  'pages.system.settings.dbPath': 'sqlite配置地址（重启生效，变更后所有扫描的数据丢失）',
+  'pages.system.settings.dbPath': 'Sqlite配置地址（重启生效，变更后所有扫描的数据丢失）',
   'pages.system.settings.enableIpv6': '启用ipv6（重启生效）',
-  'pages.system.settings.listenAddrIpv4': 'ipv4监听地址（重启生效）',
+  'pages.system.settings.listenAddrIpv4': 'Ipv4监听地址（重启生效）',
+  'pages.system.settings.listenAddrIpv6': 'Ipv6监听地址（重启生效）',
+  'pages.system.settings.port': '端口号（重启生效）',
+  'pages.system.settings.logLevel': '日志级别(重启生效)',
 };
