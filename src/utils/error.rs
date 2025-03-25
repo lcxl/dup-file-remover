@@ -15,6 +15,8 @@ pub enum DfrError {
     ConfigError(config::ConfigError),
     /// A TOML edit error occurred.
     TomlEditError(toml_edit::TomlError),
+    /// A TOML ser error occurred.
+    TomlError(toml::ser::Error),
     /// A connection pool error occurred.
     R2d2Error(r2d2::Error),
 }
@@ -27,6 +29,7 @@ impl Display for DfrError {
             DfrError::RusqliteError(error) => error.fmt(f),
             DfrError::ConfigError(error) => error.fmt(f),
             DfrError::TomlEditError(error) => error.fmt(f),
+            DfrError::TomlError(error) => error.fmt(f),
             DfrError::R2d2Error(error) => error.fmt(f),
         }
     }
@@ -59,6 +62,12 @@ impl From<config::ConfigError> for DfrError {
 impl From<toml_edit::TomlError> for DfrError {
     fn from(err: toml_edit::TomlError) -> Self {
         DfrError::TomlEditError(err)
+    }
+}
+
+impl From<toml::ser::Error> for DfrError {
+    fn from(err: toml::ser::Error) -> Self {
+        DfrError::TomlError(err)
     }
 }
 

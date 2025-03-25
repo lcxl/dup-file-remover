@@ -1,10 +1,10 @@
 use std::{fs, path::PathBuf};
 
-use chrono::{DateTime, Local};
 use ::serde::{Deserialize, Serialize};
+use chrono::{DateTime, Local};
 use clap::Parser;
 use config::{Config, Environment, File};
-use log::info;
+use log::{debug, info};
 use utoipa::{IntoParams, ToSchema};
 
 use crate::utils::error::DfrError;
@@ -105,7 +105,6 @@ pub struct ListSettings {
     pub filter_dup_file_by_dir_path: Option<bool>,
 }
 
-
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 #[serde(default)]
 pub struct Settings {
@@ -182,8 +181,6 @@ impl Default for ListSettings {
 
 impl Settings {
     pub fn new(args: &Args) -> Result<Self, DfrError> {
-        //let config_file_path = PathBuf::from(args.config_file_path.as_str());
-        //let config_file_path = config_file_path.canonicalize()?;
         info!(
             "Loading config file from: {}",
             args.config_file_path.as_str()
@@ -202,9 +199,9 @@ impl Settings {
         let mut config_file_path = PathBuf::from(self.system.config_file_path.as_str());
         config_file_path.set_extension("toml");
         // Save settings to config file
-        let toml_str = toml::to_string(self).unwrap();
+        let toml_str = toml::to_string(self)?;
 
-        info!(
+        debug!(
             "Saving config to: {}, content: {}",
             config_file_path.display(),
             toml_str
