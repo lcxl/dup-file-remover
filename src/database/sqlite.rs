@@ -5,7 +5,8 @@ use log::{error, info};
 use rusqlite::{params_from_iter, Connection, Params, Result, ToSql};
 
 use crate::{
-    model::settings::ListSettings, utils::{self, error::DfrError}
+    model::settings::ListSettings,
+    utils::{self, error::DfrError},
 };
 
 use super::file_info::{FileInfo, FileInfoList, FileInfoWithMd5Count, InodeInfo};
@@ -20,7 +21,7 @@ pub struct FileInfoDO {
     pub scan_time: DateTime<Local>,
     pub version: u64,
 }
-
+#[derive(Debug)]
 pub struct InodeInfoDO {
     pub inode_info: InodeInfo,
     pub id: i64,
@@ -188,7 +189,32 @@ impl DatabaseManager {
             )?;
             tx.last_insert_rowid()
         } else {
-            node_info_do_result?.id
+            let db_node_info = node_info_do_result?;
+            if db_node_info.inode_info != file_info.inode_info {
+                info!("Need to update file {} inode info, db inode info: {:?}, current file inode info: {:?}",file_info.file_path, db_node_info , file_info.inode_info);
+                let sql = "
+                update inode_info 
+                set inode=?1, dev_id=?2, permissions=?3, nlink=?4, uid=?5, gid=?6, created=?7, modified=?8, md5=?9, size=?10
+                where id=?11
+                ";
+                tx.execute(
+                    sql,
+                    (
+                        file_info.inode_info.inode,
+                        file_info.inode_info.dev_id,
+                        file_info.inode_info.permissions,
+                        file_info.inode_info.nlink,
+                        file_info.inode_info.uid,
+                        file_info.inode_info.gid,
+                        &file_info.inode_info.created,
+                        &file_info.inode_info.modified,
+                        &file_info.inode_info.md5,
+                        file_info.inode_info.size,
+                        db_node_info.id,
+                    ),
+                )?;
+            }
+            db_node_info.id
         };
 
         let sql = "insert or replace into file_info (inode_info_id, dir_path, file_name, file_extension, scan_time, version) 
@@ -395,10 +421,7 @@ impl DatabaseManager {
         Ok(())
     }
 
-    pub fn list_files(
-        &self,
-        query_list_params: &ListSettings,
-    ) -> Result<FileInfoList, DfrError> {
+    pub fn list_files(&self, query_list_params: &ListSettings) -> Result<FileInfoList, DfrError> {
         let mut conn = self.pool.get().unwrap();
         let mut params: Vec<Arc<dyn ToSql>> = Vec::new();
         let mut sub_query_sql = String::from(
