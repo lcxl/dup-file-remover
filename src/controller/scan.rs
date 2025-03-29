@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -154,13 +155,25 @@ pub async fn scan_all_files(
         status.scan_request = Some(scan_request.clone());
         status.started = true;
     }
+    let mut ignore_path_set = HashSet::new();
+    ignore_path_set.insert(trash_path.clone());
+    if let Some(ignore_paths) = scan_request.ignore_paths.clone() {
+        for ignore_path in ignore_paths.iter() {
+            let ignore_path = PathBuf::from(ignore_path);
+            let real_ignore_path_result = std::fs::canonicalize(ignore_path);
+            if let Ok(real_ignore_path) = real_ignore_path_result {
+                ignore_path_set.insert(real_ignore_path);
+            }
+        }
+    }
+
     let result = _scan_all_files(
         current_path,
         scan_request,
         scan_version,
         db,
         scan_status,
-        trash_path.as_path(),
+        &ignore_path_set,
     )
     .await;
     db.remove_deleted_inode()?;
@@ -179,17 +192,18 @@ async fn _scan_all_files(
     scan_version: u64,
     db: &PoolDatabaseManager,
     scan_status: &SharedScanStatus,
-    trash_path: &Path,
+    ignore_path_set: &HashSet<PathBuf>,
 ) -> Result<(), DfrError> {
     if !current_path.is_dir() {
         scan_file(scan_request, current_path, scan_version, db, scan_status).await?;
         return Ok(());
     }
 
-    if trash_path == current_path {
-        info!("Ignore trash path: {:?}", trash_path);
+    if ignore_path_set.contains(current_path) {
+        info!("Ignore directory path: {:?}", current_path);
         return Ok(());
     }
+
     let mut queue = vec![];
     queue.push(PathBuf::from(current_path));
     while let Some(current_path) = queue.pop() {
@@ -207,6 +221,10 @@ async fn _scan_all_files(
             }
             if entry.path().is_dir() {
                 let sub_path = entry.path();
+                if ignore_path_set.contains(&sub_path) {
+                    info!("Ignore directory path: {:?}", current_path);
+                    continue;
+                }
                 queue.push(sub_path);
                 debug!("Push back dir {:?} to queue", entry.path());
             } else {

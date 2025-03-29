@@ -274,6 +274,7 @@ declare namespace API {
     code: number;
     /** Scan settings */
     data?: {
+      ignore_paths?: any;
       include_file_extensions?: any;
       max_file_size?: number;
       min_file_size?: number;
@@ -316,6 +317,8 @@ declare namespace API {
   };
 
   type ScanSettings = {
+    /** Ignore path to ignore during scan. If not provided, no paths will be ignored. */
+    ignore_paths?: any;
     /** Optional list of file extensions to include in the scan. If not provided, all files will be scanned. */
     include_file_extensions?: any;
     /** Maximum file size in bytes to include in the scan. If not provided, there is no maximum size limit. */

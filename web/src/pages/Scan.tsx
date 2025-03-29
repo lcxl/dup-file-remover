@@ -4,7 +4,7 @@ import { startScan } from '@/services/dfr/startScan';
 import { stopScan } from '@/services/dfr/stopScan';
 import { formatSize } from '@/utils/format_utils';
 import { HeartTwoTone, SmileTwoTone } from '@ant-design/icons';
-import { PageContainer, ProForm, ProFormDigit, ProFormInstance, ProFormSelect, ProFormText } from '@ant-design/pro-components';
+import { PageContainer, ProForm, ProFormDigit, ProFormInstance, ProFormSelect, ProFormText, ProFormTextArea } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
 import { Alert, Button, Card, Col, message, Row, Space, Typography } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
@@ -92,7 +92,9 @@ const Admin: React.FC = () => {
 
       </Card>
       <Card>
-        <ProForm<API.ScanSettings>
+        <ProForm<API.ScanSettings & {
+          ignore_path_area?: string
+        }>
           disabled={scaning}
           submitter={{
             searchConfig: {
@@ -101,7 +103,14 @@ const Admin: React.FC = () => {
           }}
           request={async () => {
             const response = await queryScanSettings();
-            return response.data!;
+            let ignore_path_area = null;
+            if (response.data?.ignore_paths != null) {
+              ignore_path_area = response.data?.ignore_paths.join("\n");
+            }
+            return {
+              ignore_path_area,
+              ...response.data!
+            };
           }
           }
           onFinish={async (values) => {
@@ -110,9 +119,17 @@ const Admin: React.FC = () => {
             console.log('validateFields:', val1);
             const val2 = await formRef.current?.validateFieldsReturnFormatValue?.();
             console.log('validateFieldsReturnFormatValue:', val2);
-            setScaning(true);
-            const result = await startScan(values);
 
+            if (values.ignore_path_area) {
+              values.ignore_paths = values.ignore_path_area.split("\n");
+            }
+            let request = {
+              ...values,
+            }
+            delete request.ignore_path_area;
+            console.log('startScan request:', request);
+            const result = await startScan(request);
+            setScaning(true);
             console.log('startScan result:', result);
 
             message.success('开始扫描...');
@@ -138,7 +155,11 @@ const Admin: React.FC = () => {
           />
           <ProFormDigit label="最小文件大小" name="min_file_size" min={0} />
           <ProFormDigit label="最大文件大小" name="max_file_size" min={0} />
-
+          <ProFormTextArea
+            name="ignore_path_area"
+            label="要排除的目录列表"
+            placeholder="请输入要排除的目录列表"
+          />
         </ProForm>
       </Card>
     </PageContainer>

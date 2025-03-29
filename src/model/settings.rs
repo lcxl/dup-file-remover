@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::{collections::HashSet, fs, path::PathBuf};
 
 use ::serde::{Deserialize, Serialize};
 use chrono::{DateTime, Local};
@@ -57,11 +57,13 @@ pub struct ScanSettings {
     /// Scan path
     pub scan_path: String,
     /// Optional list of file extensions to include in the scan. If not provided, all files will be scanned.
-    pub include_file_extensions: Option<Vec<String>>,
+    pub include_file_extensions: Option<HashSet<String>>,
     /// Minimum file size in bytes to include in the scan. If not provided, there is no minimum size limit.
     pub min_file_size: Option<u64>,
     /// Maximum file size in bytes to include in the scan. If not provided, there is no maximum size limit.
     pub max_file_size: Option<u64>,
+    /// Ignore path to ignore during scan. If not provided, no paths will be ignored.
+    pub ignore_paths: Option<HashSet<String>>,
 }
 
 /// Query parameters for listing files.
@@ -150,6 +152,7 @@ impl Default for ScanSettings {
             include_file_extensions: None,
             min_file_size: None,
             max_file_size: None,
+            ignore_paths: None,
         }
     }
 }
