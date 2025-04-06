@@ -178,7 +178,8 @@ pub async fn delete_file(
                 fs::remove_file(db_file_info.file_path.as_str()).await?;
             }
         } else {
-            info!("Found file in trash dir: {:?}", trash_file_path);
+            info!("Found file in trash dir: {:?}, remove file directly", trash_file_path);
+            fs::remove_file(db_file_info.file_path.as_str()).await?;
         }
 
         db.move_file_to_trash(&db_file_info)?;
