@@ -107,7 +107,7 @@ pub fn run() -> Result<Server, DfrError> {
                         return error::InternalError::from_response(
                             err,
                             HttpResponse::BadRequest()
-                                .json(RestResponse::failed(ErrorCode::UNKNOWN_ERROR, err_message)),
+                                .json(RestResponse::failed(ErrorCode::SYSTEM_ERROR, err_message)),
                         )
                         .into();
                     }),

@@ -117,10 +117,16 @@ impl DatabaseManager {
         CREATE INDEX IF NOT EXISTS idx_version_dir_path ON file_info (version, dir_path);
 
         CREATE TABLE IF NOT EXISTS trash_info (
-            md5 TEXT NOT NULL,
             dir_path TEXT NOT NULL,
             file_name TEXT NOT NULL,
             remove_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+            permissions INTEGER NOT NULL,
+            uid INTEGER NOT NULL,
+            gid INTEGER NOT NULL,
+            created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            modified DATETIME DEFAULT CURRENT_TIMESTAMP,
+            md5 TEXT NOT NULL,
+            size INTEGER NOT NULL,
             UNIQUE(dir_path, file_name)
         );
         CREATE INDEX IF NOT EXISTS idx_file_name ON trash_info (file_name);
@@ -170,7 +176,7 @@ impl DatabaseManager {
                 ),
             }
 
-            let sql = "INSERT or replace INTO inode_info (inode, dev_id, permissions, nlink, uid, gid, created, modified, md5, size) 
+            let sql = "INSERT OR REPLACE INTO inode_info (inode, dev_id, permissions, nlink, uid, gid, created, modified, md5, size) 
             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)";
             tx.execute(
                 sql,
@@ -217,7 +223,7 @@ impl DatabaseManager {
             db_node_info.id
         };
 
-        let sql = "insert or replace into file_info (inode_info_id, dir_path, file_name, file_extension, scan_time, version) 
+        let sql = "INSERT OR REPLACE INTO file_info (inode_info_id, dir_path, file_name, file_extension, scan_time, version) 
           VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
         let result = match tx.execute(
             sql,
@@ -421,12 +427,43 @@ impl DatabaseManager {
         Ok(())
     }
 
+    pub fn move_file_to_trash(&self, file_info: &FileInfo) -> Result<()> {
+        let mut conn = self.pool.get().unwrap();
+        let tx = conn.transaction()?;
+        let md5 = file_info.inode_info.md5.clone().unwrap();
+        let sql = "DELETE FROM file_info WHERE dir_path = ? and file_name = ?";
+        tx.execute(sql, (&file_info.dir_path, &file_info.file_name))?;
+
+        let sql = "
+            INSERT OR REPLACE INTO trash_info (dir_path, file_name, remove_time, permissions, uid, gid, created, modified, md5, size) 
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)";
+        tx.execute(
+            sql,
+            (
+                &file_info.dir_path,
+                &file_info.file_name,
+                Local::now(),
+                file_info.inode_info.permissions,
+                file_info.inode_info.uid,
+                file_info.inode_info.gid,
+                &file_info.inode_info.created,
+                &file_info.inode_info.modified,
+                &md5,
+                file_info.inode_info.size,
+            ),
+        )?;
+
+        tx.commit()?;
+        Ok(())
+    }
+
     pub fn list_files(&self, query_list_params: &ListSettings) -> Result<FileInfoList, DfrError> {
         let mut conn = self.pool.get().unwrap();
         let mut params: Vec<Arc<dyn ToSql>> = Vec::new();
         let mut sub_query_sql = String::from(
             "SELECT md5, count(md5) as md5_count
-            FROM inode_info where 1=1",
+            FROM inode_info 
+            WHERE 1=1",
         );
         if let Some(min_file_size) = query_list_params.min_file_size {
             params.push(Arc::new(min_file_size));
@@ -436,7 +473,7 @@ impl DatabaseManager {
             params.push(Arc::new(max_file_size));
             sub_query_sql += " and size < ?";
         }
-        sub_query_sql += " group by md5";
+        sub_query_sql += " GROUP BY md5";
         let mut filter_sub_query_sql = String::new();
         let mut filter_select_params = String::new();
         let mut filter_join_sql = String::new();
@@ -456,7 +493,7 @@ impl DatabaseManager {
                     "SELECT b1.md5, count(b1.md5) as md5_count
                     FROM inode_info as b1,
                         file_info as b2
-                     where  b1.id = b2.inode_info_id",
+                    WHERE b1.id = b2.inode_info_id",
                 );
                 if let Some(min_file_size) = query_list_params.min_file_size {
                     params.push(Arc::new(min_file_size));
@@ -470,7 +507,7 @@ impl DatabaseManager {
                 params.push(Arc::new(format!("%{}%", dir_path)));
                 sub_query_sql += " and b2.dir_path like ?";
 
-                sub_query_sql += " group by b1.md5";
+                sub_query_sql += " GROUP BY b1.md5";
                 filter_sub_query_sql = format!(", ({}) as a4", sub_query_sql);
                 filter_select_params = String::from(", a4.md5_count as filter_md5_count");
                 filter_join_sql = String::from("and a4.md5 = a3.md5");
@@ -479,7 +516,7 @@ impl DatabaseManager {
         }
 
         let mut query_sql = format!(
-            " from inode_info as a1, 
+            " FROM inode_info as a1, 
                 file_info as a2, 
                 ({}) as a3
                 {}

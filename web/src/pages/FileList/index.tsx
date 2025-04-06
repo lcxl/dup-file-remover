@@ -13,7 +13,7 @@ import {
   ProTable,
 } from '@ant-design/pro-components';
 import { FormattedMessage, useIntl, history } from '@umijs/max';
-import { Button, Drawer, Input, message, Select, SelectProps } from 'antd';
+import { Button, Drawer, Input, message, Popconfirm, Select, SelectProps } from 'antd';
 import React, { useRef, useState } from 'react';
 import { queryListSettings } from '@/services/dfr/queryListSettings';
 
@@ -49,8 +49,7 @@ const TableList: React.FC = () => {
   /**
    * @en-US The pop-up window of the distribution update window
    * @zh-CN 分布更新窗口的弹窗
-   * */
-  const [updateModalOpen, handleUpdateModalOpen] = useState<boolean>(false);
+  * */
   const formRef = useRef<ProFormInstance>();
   const [showDetail, setShowDetail] = useState<boolean>(false);
 
@@ -182,7 +181,6 @@ const TableList: React.FC = () => {
       ),
       sorter: true,
       hideInSearch: true,
-      hideInTable: true,
       dataIndex: ["file_info", "scan_time"],
       valueType: 'dateTime',
       renderFormItem: (item, { defaultRender, ...rest }, form) => {
@@ -250,15 +248,23 @@ const TableList: React.FC = () => {
       dataIndex: 'option',
       valueType: 'option',
       render: (_, record) => [
-        <a
-          key="config"
-          onClick={() => {
-            handleUpdateModalOpen(true);
-            setCurrentRow(record);
-          }}
+        <Popconfirm
+          title="Delete the file"
+          description="Are you sure to delete this file?"
+          onConfirm={
+            async () => {
+              console.log("Begin to delete file: ", record.file_info.dir_path, "/", record.file_info.file_name);
+              const response = await deleteFile({ dir_path: record.file_info.dir_path, file_name: record.file_info.file_name });
+              console.log("deleted file: ", record.file_info.dir_path, "/", record.file_info.file_name);
+              setCurrentRow(undefined);
+              actionRef.current?.reloadAndRest?.();
+            }
+          }
         >
-          <FormattedMessage id="pages.searchTable.config" defaultMessage="Configuration" />
-        </a>,
+          <a key="config">
+            <FormattedMessage id="pages.searchTable.deletion" />
+          </a>
+        </Popconfirm>,
         <a key="subscribeAlert" href="https://procomponents.ant.design/">
           <FormattedMessage
             id="pages.searchTable.subscribeAlert"

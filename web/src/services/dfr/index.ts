@@ -21,6 +21,8 @@ import * as updateSettings from './updateSettings';
 export default {
   getCurrentUser,
   changePassword,
+  deleteFile,
+  deleteFiles,
   listFiles,
   queryListSettings,
   queryScanSettings,
@@ -29,8 +31,6 @@ export default {
   stopScan,
   querySettings,
   updateSettings,
-  deleteFile,
-  deleteFiles,
   loginAccount,
   getCaptcha,
   logoutAccount,

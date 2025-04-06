@@ -107,6 +107,7 @@ pub struct ListSettings {
     pub filter_dup_file_by_dir_path: Option<bool>,
 }
 
+/// Dfr Settings
 #[derive(Clone, Debug, Deserialize, Serialize, Default)]
 #[serde(default)]
 pub struct Settings {
@@ -131,7 +132,7 @@ impl Default for SystemSettings {
             listen_addr_ipv6: "::".to_string(),
             log_level: "info".to_string(),
             clear_trash_interval_s: 2592000, // 30 days in seconds
-            trash_path: "data/dfr_trash".to_string(),
+            trash_path: "data/.dfr_trash".to_string(),
         }
     }
 }

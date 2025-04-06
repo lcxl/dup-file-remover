@@ -54,7 +54,7 @@ export default {
   'pages.searchTable.titleUpdatedAt': '上次扫描时间',
   'pages.searchTable.exception': '请输入异常原因！',
   'pages.searchTable.titleOption': '操作',
-  'pages.searchTable.config': '配置',
+  'pages.searchTable.deletion': '删除',
   'pages.searchTable.subscribeAlert': '订阅警报',
   'pages.searchTable.title': '查询表格',
   'pages.searchTable.new': '新建',

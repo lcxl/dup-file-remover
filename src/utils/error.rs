@@ -2,6 +2,33 @@ use std::fmt::{self, Display};
 
 use actix_web::ResponseError;
 
+use crate::model::common::{ErrorCode, RestResponse};
+
+#[derive(Debug)]
+pub struct CustomDfsError {
+    pub error_code: ErrorCode,
+    pub message: String,
+}
+
+impl fmt::Display for CustomDfsError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.write_str("Custom dfs error")?;
+
+        write!(fmt, "({}): {}", self.error_code, self.message)?;
+
+        Ok(())
+    }
+}
+
+impl CustomDfsError {
+    pub fn new(error_code: ErrorCode, message: String) -> CustomDfsError{
+        CustomDfsError {
+            error_code,
+            message,
+        }
+    }
+} 
+
 /// Custom error type for the application.
 #[derive(Debug)]
 pub enum DfrError {
@@ -19,6 +46,14 @@ pub enum DfrError {
     TomlError(toml::ser::Error),
     /// A connection pool error occurred.
     R2d2Error(r2d2::Error),
+    /// Dfs custom error
+    CustomError(CustomDfsError),
+}
+
+impl DfrError {
+    pub fn custom_error<T>(error_code: ErrorCode, message: String) -> Result<T, DfrError> {
+        Err(DfrError::CustomError(CustomDfsError::new(error_code,  message)))
+    }
 }
 
 impl Display for DfrError {
@@ -31,6 +66,7 @@ impl Display for DfrError {
             DfrError::TomlEditError(error) => error.fmt(f),
             DfrError::TomlError(error) => error.fmt(f),
             DfrError::R2d2Error(error) => error.fmt(f),
+            DfrError::CustomError(error) => error.fmt(f),
         }
     }
 }
@@ -77,4 +113,20 @@ impl From<r2d2::Error> for DfrError {
     }
 }
 
-impl ResponseError for DfrError {}
+impl ResponseError for DfrError {
+    fn status_code(&self) -> actix_web::http::StatusCode {
+        actix_web::http::StatusCode::OK
+    }
+
+    fn error_response(&self) -> actix_web::HttpResponse<actix_web::body::BoxBody> {
+        let error_code = match self {
+            DfrError::CustomError(error) => error.error_code,
+            _ => ErrorCode::SYSTEM_ERROR,
+        };
+        // write as json
+        let rest = RestResponse::failed(error_code, format!("{}", self));
+        actix_web::HttpResponse::Ok()
+            .status(self.status_code())
+            .json(rest)
+    }
+}

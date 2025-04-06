@@ -56,7 +56,7 @@ export default {
   'pages.searchTable.titleUpdatedAt': 'Last scan time',
   'pages.searchTable.exception': 'Please enter the reason for the exception!',
   'pages.searchTable.titleOption': 'Option',
-  'pages.searchTable.config': 'Configuration',
+  'pages.searchTable.deletion': 'Delete',
   'pages.searchTable.subscribeAlert': 'Subscribe to alerts',
   'pages.searchTable.title': 'Enquiry Form',
   'pages.searchTable.new': 'New',
