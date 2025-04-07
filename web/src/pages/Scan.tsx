@@ -70,7 +70,7 @@ const Admin: React.FC = () => {
               message.success('扫描已停止');
               setScaning(false);
             }}
-          >停止扫描</Button>
+          >{intl.formatMessage({ id: 'pages.searchTable.stopSearch' })}</Button>
         </Space>
 
         <Row>
@@ -98,7 +98,7 @@ const Admin: React.FC = () => {
           disabled={scaning}
           submitter={{
             searchConfig: {
-              submitText: '开始扫描',
+              submitText: intl.formatMessage({ id: 'pages.searchTable.startSearch' }),
             }
           }}
           request={async () => {

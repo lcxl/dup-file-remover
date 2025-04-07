@@ -74,6 +74,9 @@ export default {
   'pages.searchTable.searchMd5Count': 'File md5 count range',
   'pages.searchTable.searchFileSize': 'File size range',
   'pages.searchTable.startSearch': 'Start search',
+  'pages.searchTable.stopSearch': 'Stop search',
+  'pages.searchTable.optionDeleteConfirmTitle': 'Delete the file',
+  'pages.searchTable.optionDeleteConfirmDescription': 'Are you sure to delete this file?',
   'pages.system.settings.configFilePath': 'Configuration file path (cannot be changed)',
   'pages.system.settings.dbPath': 'Sqlite configuration address (takes effect after restart, all scanned data will be lost after change)',
   'pages.system.settings.enableIpv6': 'Enable ipv6 (takes effect after restart)',
@@ -81,4 +84,6 @@ export default {
   'pages.system.settings.listenAddrIpv6': 'Ipv6 listening address (takes effect after restart)',
   'pages.system.settings.port': 'Port number (takes effect after restart)',
   'pages.system.settings.logLevel': 'Log level (takes effect after restart)',
+  'pages.system.settings.clearTrashIntervalS': 'Trash cleanup interval (in seconds)',
+  'pages.system.settings.trashPath': 'Trash path',
 };

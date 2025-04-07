@@ -249,8 +249,8 @@ const TableList: React.FC = () => {
       valueType: 'option',
       render: (_, record) => [
         <Popconfirm
-          title="Delete the file"
-          description="Are you sure to delete this file?"
+          title={intl.formatMessage({ id: "pages.searchTable.optionDeleteConfirmTitle" })}
+          description={intl.formatMessage({ id: "pages.searchTable.optionDeleteConfirmDescription" })}
           onConfirm={
             async () => {
               console.log("Begin to delete file: ", record.file_info.dir_path, "/", record.file_info.file_name);

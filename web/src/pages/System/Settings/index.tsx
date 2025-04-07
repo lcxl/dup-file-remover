@@ -35,14 +35,12 @@ const Settings: React.FC = () => {
                     name="config_file_path"
                     label={intl.formatMessage({
                         id: "pages.system.settings.configFilePath",
-                        defaultMessage: "配置文件路径（不可更改）"
                     })}
                     disabled />
                 <ProFormText
                     name="db_path"
                     label={intl.formatMessage({
                         id: "pages.system.settings.dbPath",
-                        defaultMessage: "sqlite配置地址（重启生效，变更后所有扫描的数据丢失）"
                     })}
                     rules={[
                         { required: true, message: 'sqlite配置地址必填！' },
@@ -53,14 +51,12 @@ const Settings: React.FC = () => {
                     name="enable_ipv6"
                     label={intl.formatMessage({
                         id: "pages.system.settings.enableIpv6",
-                        defaultMessage: "启用ipv6（重启生效）"
                     })}
                 />
                 <ProFormText
                     name="listen_addr_ipv4"
                     label={intl.formatMessage({
                         id: "pages.system.settings.listenAddrIpv4",
-                        defaultMessage: "ipv4监听地址（重启生效）"
                     })}
                     hasFeedback
                     rules={[
@@ -71,24 +67,22 @@ const Settings: React.FC = () => {
                     name="listen_addr_ipv6"
                     label={intl.formatMessage({
                         id: "pages.system.settings.listenAddrIpv6",
-                        defaultMessage: "ipv6监听地址（重启生效）"
                     })} />
                 <ProFormDigit
                     label={intl.formatMessage({
                         id: "pages.system.settings.port",
-                        defaultMessage: "端口号（重启生效）"
                     })}
                     name="port"
                     min={1}
                     max={65535}
                     fieldProps={{ precision: 0 }}
                 />
+
                 <ProFormSelect
                     name="log_level"
                     label={
                         intl.formatMessage({
                             id: "pages.system.settings.logLevel",
-                            defaultMessage: "日志级别(重启生效)",
                         })
                     }
                     valueEnum={{
@@ -101,6 +95,22 @@ const Settings: React.FC = () => {
                     placeholder="请指定日志级别"
                     rules={[{ required: true, message: '请指定日志级别!' }]}
                 />
+
+                <ProFormDigit
+                    label={intl.formatMessage({
+                        id: "pages.system.settings.clearTrashIntervalS",
+                    })}
+                    name="clear_trash_interval_s"
+                    min={1}
+                    fieldProps={{ precision: 0 }}
+                />
+
+                <ProFormText
+                    name="trash_path"
+                    label={intl.formatMessage({
+                        id: "pages.system.settings.trashPath",
+                    })}
+                    disabled />
             </ProForm>
         </PageContainer>
 

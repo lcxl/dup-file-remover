@@ -72,6 +72,9 @@ export default {
   'pages.searchTable.searchMd5Count': '重复项范围',
   'pages.searchTable.searchFileSize': '文件大小范围',
   'pages.searchTable.startSearch': '开始扫描',
+  'pages.searchTable.stopSearch': '停止扫描',
+  'pages.searchTable.optionDeleteConfirmTitle': '删除文件',
+  'pages.searchTable.optionDeleteConfirmDescription': '是否确定要删除此文件？',
   'pages.system.settings.configFilePath': '配置文件路径（不可更改）',
   'pages.system.settings.dbPath': 'Sqlite配置地址（重启生效，变更后所有扫描的数据丢失）',
   'pages.system.settings.enableIpv6': '启用ipv6（重启生效）',
@@ -79,4 +82,6 @@ export default {
   'pages.system.settings.listenAddrIpv6': 'Ipv6监听地址（重启生效）',
   'pages.system.settings.port': '端口号（重启生效）',
   'pages.system.settings.logLevel': '日志级别(重启生效)',
+  'pages.system.settings.clearTrashIntervalS': '回收站清理间隔（秒）',
+  'pages.system.settings.trashPath': '回收站路径',
 };
