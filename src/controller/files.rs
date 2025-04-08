@@ -121,7 +121,7 @@ pub async fn delete_file(
             }
 
             // check if file is changed
-            let file_info = FileInfo::new(db_file_info.file_path.as_str(), 0, Local::now())?;
+            let file_info = FileInfo::new(item.file_path.as_str(), 0, Local::now())?;
             if file_info.inode_info != item.inode_info {
                 // file is changed, need to rescan
                 dup_len -= 1;
@@ -129,7 +129,7 @@ pub async fn delete_file(
             }
         }
 
-        if dup_len <= 1 {
+        if dup_len < 1 {
             let need_delete = delete_file_request.force_delete.unwrap_or(false);
 
             if !need_delete {
@@ -146,7 +146,7 @@ pub async fn delete_file(
         return DfrError::custom_error(
             ErrorCode::SYSTEM_ERROR,
             format!(
-                "Not allow to delete file {}, the file is not duplicated",
+                "Not allow to delete file {}, the file hash is none",
                 file_info.file_path
             ),
         );

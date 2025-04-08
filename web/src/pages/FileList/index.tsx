@@ -254,8 +254,17 @@ const TableList: React.FC = () => {
           onConfirm={
             async () => {
               console.log("Begin to delete file: ", record.file_info.dir_path, "/", record.file_info.file_name);
-              const response = await deleteFile({ dir_path: record.file_info.dir_path, file_name: record.file_info.file_name });
-              console.log("deleted file: ", record.file_info.dir_path, "/", record.file_info.file_name);
+              const response = await deleteFile({
+                dir_path: record.file_info.dir_path,
+                file_name: record.file_info.file_name
+              }).catch((err) => {
+                console.log("request deleteFile error: " + err)
+              });
+              if (!response) {
+                return;
+              }
+
+              console.log("deleted file: ", record.file_info.dir_path, "/", record.file_info.file_name, response);
               setCurrentRow(undefined);
               actionRef.current?.reloadAndRest?.();
             }
