@@ -16,7 +16,7 @@ import {
   ProFormText,
 } from '@ant-design/pro-components';
 import { FormattedMessage, history, SelectLang, useIntl, useModel, Helmet } from '@umijs/max';
-import { Alert, message, Tabs } from 'antd';
+import { Alert, message, Popover, Tabs } from 'antd';
 import Settings from '../../../../config/defaultSettings';
 import React, { useState } from 'react';
 import { flushSync } from 'react-dom';
@@ -172,7 +172,9 @@ const Login: React.FC = () => {
           initialValues={{
             autoLogin: true,
           }}
+          /*
           actions={[
+            
             <FormattedMessage
               key="loginWith"
               id="pages.login.loginWith"
@@ -180,6 +182,7 @@ const Login: React.FC = () => {
             />,
             <ActionIcons key="icons" />,
           ]}
+            */
           onFinish={async (values) => {
             await handleSubmit(values as API.LoginParams);
           }}
@@ -196,6 +199,7 @@ const Login: React.FC = () => {
                   defaultMessage: '账户密码登录',
                 }),
               },
+              /*
               {
                 key: 'mobile',
                 label: intl.formatMessage({
@@ -203,6 +207,7 @@ const Login: React.FC = () => {
                   defaultMessage: '手机号登录',
                 }),
               },
+              */
             ]}
           />
 
@@ -353,6 +358,7 @@ const Login: React.FC = () => {
             <ProFormCheckbox noStyle name="autoLogin">
               <FormattedMessage id="pages.login.rememberMe" defaultMessage="自动登录" />
             </ProFormCheckbox>
+            <Popover content={intl.formatMessage({ id: 'pages.login.forgotPasswordContent' })} trigger="click">
             <a
               style={{
                 float: 'right',
@@ -360,6 +366,7 @@ const Login: React.FC = () => {
             >
               <FormattedMessage id="pages.login.forgotPassword" defaultMessage="忘记密码" />
             </a>
+            </Popover>
           </div>
         </LoginForm>
       </div>
