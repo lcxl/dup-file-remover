@@ -129,8 +129,8 @@ impl DatabaseManager {
             size INTEGER NOT NULL,
             UNIQUE(dir_path, file_name)
         );
-        CREATE INDEX IF NOT EXISTS idx_file_name ON trash_info (file_name);
-        CREATE INDEX IF NOT EXISTS idx_md5 ON trash_info (md5);
+        CREATE INDEX IF NOT EXISTS idx_trash_info_file_name ON trash_info (file_name);
+        CREATE INDEX IF NOT EXISTS idx_trash_info_md5 ON trash_info (md5);
         ";
         tx.execute_batch(sql)?;
         tx.commit()?;
