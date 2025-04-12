@@ -12,8 +12,8 @@ const Settings: React.FC = () => {
     return (
         <PageContainer>
             <Alert
-                message="注意"
-                description="使用环境变量（DFR_开头）的设置项优先级最高，且无法通过此页面进行修改。"
+                message={intl.formatMessage({ id: "pages.system.settings.alert.message" })}
+                description={intl.formatMessage({ id: "pages.system.settings.alert.description" })}
                 type="warning"
                 showIcon
             />
@@ -28,7 +28,7 @@ const Settings: React.FC = () => {
                 onFinish={async (values) => {
                     console.log(values);
                     await updateSettings(values);
-                    message.success('更新成功！');
+                    message.success(intl.formatMessage({ id: "pages.system.settings.updateSucceedMessage" }));
                 }}
             >
                 <ProFormText
@@ -43,7 +43,7 @@ const Settings: React.FC = () => {
                         id: "pages.system.settings.dbPath",
                     })}
                     rules={[
-                        { required: true, message: 'sqlite配置地址必填！' },
+                        { required: true, message: intl.formatMessage({ id: "pages.system.settings.sqlitePathRequiredMessage" }) },
                     ]}
                     hasFeedback
                 />
@@ -60,7 +60,7 @@ const Settings: React.FC = () => {
                     })}
                     hasFeedback
                     rules={[
-                        { required: true, message: '请输入ipv4地址' },
+                        { required: true, message: intl.formatMessage({ id: "pages.system.settings.ipv4AddressRequiredMessage" }) },
                     ]}
                 />
                 <ProFormText
@@ -92,8 +92,8 @@ const Settings: React.FC = () => {
                         warn: 'WARN',
                         error: 'ERROR',
                     }}
-                    placeholder="请指定日志级别"
-                    rules={[{ required: true, message: '请指定日志级别!' }]}
+                    placeholder={intl.formatMessage({ id: 'pages.system.settings.logLevelRequiredMessage' })}
+                    rules={[{ required: true, message: intl.formatMessage({ id: 'pages.system.settings.logLevelRequiredMessage' }) }]}
                 />
 
                 <ProFormDigit

@@ -1,12 +1,12 @@
 import { changePassword } from "@/services/dfr/changePassword";
 import { PageContainer, ProForm, ProFormText } from "@ant-design/pro-components";
-import { history, useModel } from "@umijs/max";
+import { history, useIntl, useModel } from "@umijs/max";
 import { message } from "antd";
 import { flushSync } from "react-dom";
 
 const Settings: React.FC = () => {
     const { initialState, setInitialState } = useModel('@@initialState');
-
+    const intl = useIntl();
     return (
         <PageContainer>
 
@@ -25,15 +25,15 @@ const Settings: React.FC = () => {
                 onFinish={async (values) => {
                     console.log(values);
                     if (!values.new_username && !values.new_password) {
-                        message.error('新用户名和新密码至少需要填写一个');
+                        message.error(intl.formatMessage({ id: 'pages.account.settings.newUsernameOrNewPasswordRequired' }));
                         return;
                     }
                     if (values.new_password !== values.confirm_password) {
-                        message.error('两次输入的密码不一致');
+                        message.error(intl.formatMessage({ id: 'pages.account.settings.passwordNotMatch' }));
                         return;
                     }
                     await changePassword(values);
-                    message.success('用户名/密码更新成功，请重新登陆');
+                    message.success(intl.formatMessage({ id: 'pages.account.settings.passwordUpdateSucceed' }));
                     // clear user info from state and redirect to index page
                     flushSync(() => {
                         setInitialState((s) => ({ ...s, currentUser: undefined }));
@@ -41,10 +41,10 @@ const Settings: React.FC = () => {
                     history.push("/");
                 }}
             >
-                <ProFormText name="username" label="原用户名" disabled={true} />
+                <ProFormText name="username" label={intl.formatMessage({ id: 'pages.account.settings.originUsername' })} disabled={true} />
                 <ProFormText
                     name="new_username"
-                    label="新用户名(留空则不修改)"
+                    label={intl.formatMessage({ id: 'pages.account.settings.newUsername' })}
                     hasFeedback
                     dependencies={['new_password']}
                     rules={[
@@ -54,12 +54,12 @@ const Settings: React.FC = () => {
                                 if (!!getFieldValue('new_password') || !!value) {
                                     return Promise.resolve();
                                 }
-                                return Promise.reject(new Error('新用户名和新密码至少需要填写一个'));
+                                return Promise.reject(new Error(intl.formatMessage({ id: 'pages.account.settings.newUsernameOrNewPasswordRequired' })));
                             },
                         }),
                     ]}
                 />
-                <ProFormText.Password name="password" label="原密码(修改用户名或者密码都要设置)"
+                <ProFormText.Password name="password" label={intl.formatMessage({ id: 'pages.account.settings.originPassword' })}
                     hasFeedback
                     dependencies={['new_username', 'new_password']}
 
@@ -71,17 +71,17 @@ const Settings: React.FC = () => {
                                     return Promise.resolve();
                                 }
                                 if (getFieldValue('new_username')) {
-                                    return Promise.reject(new Error('用户名有变更，请提供原密码'));
+                                    return Promise.reject(new Error(intl.formatMessage({ id: 'pages.account.settings.originUsernameRequired' })));
                                 }
                                 if (getFieldValue('new_password')) {
-                                    return Promise.reject(new Error('密码有变更，请提供原密码'));
+                                    return Promise.reject(new Error(intl.formatMessage({ id: 'pages.account.settings.originPasswordRequired' })));
                                 }
                                 return Promise.resolve();
                             },
                         }),
                     ]}
                 />
-                <ProFormText.Password name="new_password" label="新密码(留空则不修改)"
+                <ProFormText.Password name="new_password" label={intl.formatMessage({ id: 'pages.account.settings.newPassword' })}
                     hasFeedback
                     dependencies={['new_username']}
                     rules={[
@@ -91,14 +91,14 @@ const Settings: React.FC = () => {
                                 if (!!getFieldValue('new_username') || !!value) {
                                     return Promise.resolve();
                                 }
-                                return Promise.reject(new Error('新用户名和新密码至少需要填写一个'));
+                                return Promise.reject(new Error(intl.formatMessage({ id: 'pages.account.settings.newUsernameOrNewPasswordRequired' })));
                             },
                         }),
                     ]}
                 />
                 <ProFormText.Password
                     name="confirm_password"
-                    label="确认密码"
+                    label={intl.formatMessage({ id: 'pages.account.settings.confirmPassword' })}
                     dependencies={['new_password']}
                     hasFeedback
                     rules={[
@@ -109,7 +109,7 @@ const Settings: React.FC = () => {
                                 if (new_password === value) {
                                     return Promise.resolve();
                                 }
-                                return Promise.reject(new Error('The new password that you entered do not match!'));
+                                return Promise.reject(new Error(intl.formatMessage({ id: 'pages.account.settings.passwordNotMatch' })));
                             },
                         }),
                     ]} />

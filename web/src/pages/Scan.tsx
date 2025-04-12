@@ -67,26 +67,26 @@ const Admin: React.FC = () => {
             onClick={async () => {
               const result = await stopScan();
               console.log('stopScan result:', result);
-              message.success('扫描已停止');
+              message.success(intl.formatMessage({ id: "pages.scan.scanStoppedMessage" }));
               setScaning(false);
             }}
           >{intl.formatMessage({ id: 'pages.searchTable.stopSearch' })}</Button>
         </Space>
 
         <Row>
-          <Col span={8}>已扫描文件数：</Col>
+          <Col span={8}>{intl.formatMessage({ id: "pages.scan.scanedFileCount" })}</Col>
           <Col span={16}>{scanStatus?.data?.scanned_file_count}</Col>
         </Row>
         <Row>
-          <Col span={8}>当前目录：</Col>
+          <Col span={8}>{intl.formatMessage({ id: "pages.scan.currentDir" })}</Col>
           <Col span={16}>{scanStatus?.data?.current_file_info?.dir_path}</Col>
         </Row>
         <Row>
-          <Col span={8}>当前文件：</Col>
+          <Col span={8}>{intl.formatMessage({ id: "pages.scan.currentFile" })}</Col>
           <Col span={16}>{scanStatus?.data?.current_file_info?.file_name}</Col>
         </Row>
         <Row>
-          <Col span={8}>文件大小：</Col>
+          <Col span={8}>{intl.formatMessage({ id: "pages.scan.fileSize" })}</Col>
           <Col span={16}>{formatSize(scanStatus?.data?.current_file_info?.inode_info.size)}</Col>
         </Row>
 
@@ -135,9 +135,9 @@ const Admin: React.FC = () => {
             message.success('开始扫描...');
           }}
         >
-          <ProFormText name="scan_path" label="要扫描的路径" />
+          <ProFormText name="scan_path" label={intl.formatMessage({ id: "pages.scan.dirPathToScan" })} />
           <ProFormSelect name="include_file_extensions"
-            label="要扫描的文件名后缀"
+            label={intl.formatMessage({ id: "pages.scan.fileExtentionListToScan" })}
             mode='tags'
             request={async (params) => {
               console.log("ProFormSelect request:", params)
@@ -153,12 +153,12 @@ const Admin: React.FC = () => {
               ];
             }}
           />
-          <ProFormDigit label="最小文件大小" name="min_file_size" min={0} />
-          <ProFormDigit label="最大文件大小" name="max_file_size" min={0} />
+          <ProFormDigit label={intl.formatMessage({ id: "pages.scan.minFileSizeToScan" })} name="min_file_size" min={0} />
+          <ProFormDigit label={intl.formatMessage({ id: "pages.scan.maxFileSizeToScan" })} name="max_file_size" min={0} />
           <ProFormTextArea
             name="ignore_path_area"
-            label="要排除的目录列表"
-            placeholder="请输入要排除的目录列表"
+            label={intl.formatMessage({ id: "pages.scan.excludeDirList" })}
+            placeholder={intl.formatMessage({ id: "pages.scan.excludeDirListPlaceholder" })}
           />
         </ProForm>
       </Card>

@@ -68,7 +68,6 @@ const TableList: React.FC = () => {
       title: (
         <FormattedMessage
           id="pages.searchTable.updateForm.ruleName.nameLabel"
-          defaultMessage="文件名称"
         />
       ),
       dataIndex: ["file_info", "file_name"],
@@ -87,7 +86,7 @@ const TableList: React.FC = () => {
       },
     },
     {
-      title: <FormattedMessage id="pages.searchTable.fileExtention" defaultMessage="文件后缀名" />,
+      title: <FormattedMessage id="pages.searchTable.fileExtention" />,
       dataIndex: ["file_info", "file_extension"],
       hideInForm: true,
       hideInTable: true,
@@ -95,7 +94,7 @@ const TableList: React.FC = () => {
     },
     {
       key: 'file_extention_list',
-      title: <FormattedMessage id="pages.searchTable.fileExtentionList" defaultMessage="文件后缀名列表" />,
+      title: <FormattedMessage id="pages.searchTable.fileExtentionList" />,
       dataIndex: ["file_info", "file_extension"],
       hideInForm: true,
       hideInDescriptions: true,
@@ -134,7 +133,7 @@ const TableList: React.FC = () => {
       //initialValue: ["jpg", "mp4"],
     },
     {
-      title: <FormattedMessage id="pages.searchTable.titleDesc" defaultMessage="所在目录" />,
+      title: <FormattedMessage id="pages.searchTable.titleDesc" />,
       dataIndex: ["file_info", "dir_path"],
       copyable: true,
       ellipsis: true,
@@ -143,7 +142,6 @@ const TableList: React.FC = () => {
       title: (
         <FormattedMessage
           id="pages.searchTable.titleCallNo"
-          defaultMessage="重复项"
         />
       ),
       dataIndex: 'md5_count',
@@ -152,18 +150,17 @@ const TableList: React.FC = () => {
       hideInSearch: true,
       renderText: (val: string) =>
         `${val}${intl.formatMessage({
-          id: 'pages.searchTable.tenThousand',
-          defaultMessage: ' 个 ',
+          id: 'pages.searchTable.tenThousand'
         })}`,
     },
     {
-      title: <FormattedMessage id="pages.searchTable.fileMd5" defaultMessage="File md5" />,
+      title: <FormattedMessage id="pages.searchTable.fileMd5" />,
       dataIndex: ['file_info', "inode_info", "md5"],
       //hideInForm: true,
       valueType: 'text',
     },
     {
-      title: <FormattedMessage id="pages.searchTable.fileSize" defaultMessage="File size" />,
+      title: <FormattedMessage id="pages.searchTable.fileSize" />,
       dataIndex: ['file_info', "inode_info", "size"],
       hideInSearch: true,
       sorter: true,
@@ -176,7 +173,6 @@ const TableList: React.FC = () => {
       title: (
         <FormattedMessage
           id="pages.searchTable.titleUpdatedAt"
-          defaultMessage="Last scan time"
         />
       ),
       sorter: true,
@@ -190,8 +186,33 @@ const TableList: React.FC = () => {
     {
       title: (
         <FormattedMessage
+          id="pages.searchTable.fileCreatedTime"
+        />
+      ),
+      //sorter: true,
+      hideInSearch: true,
+      dataIndex: ["file_info", "inode_info", "created"],
+      valueType: 'dateTime',
+      renderFormItem: (item, { defaultRender, ...rest }, form) => {
+        return defaultRender(item);
+      },
+    },
+    {
+      key: 'search_file_created_time',
+      title: (
+        <FormattedMessage
+          id="pages.searchTable.fileCreatedTime"
+        />
+      ),
+      hideInTable: true,
+      hideInDescriptions: true,
+      dataIndex: ["file_info", "inode_info", "created"],
+      valueType: 'dateTimeRange',
+    },
+    {
+      title: (
+        <FormattedMessage
           id="pages.searchTable.fileModifiedTime"
-          defaultMessage="File modified time"
         />
       ),
       //sorter: true,
@@ -207,7 +228,6 @@ const TableList: React.FC = () => {
       title: (
         <FormattedMessage
           id="pages.searchTable.fileModifiedTime"
-          defaultMessage="File modified time"
         />
       ),
       hideInTable: true,
@@ -220,7 +240,6 @@ const TableList: React.FC = () => {
       title: (
         <FormattedMessage
           id="pages.searchTable.searchFileSize"
-          defaultMessage="File size range"
         />
       ),
       hideInTable: true,
@@ -234,7 +253,6 @@ const TableList: React.FC = () => {
       title: (
         <FormattedMessage
           id="pages.searchTable.searchMd5Count"
-          defaultMessage="File md5 count range"
         />
       ),
       hideInTable: true,
@@ -244,7 +262,7 @@ const TableList: React.FC = () => {
       //initialValue: [2, null],
     },
     {
-      title: <FormattedMessage id="pages.searchTable.titleOption" defaultMessage="Operating" />,
+      title: <FormattedMessage id="pages.searchTable.titleOption" />,
       dataIndex: 'option',
       valueType: 'option',
       render: (_, record) => [
@@ -274,12 +292,13 @@ const TableList: React.FC = () => {
             <FormattedMessage id="pages.searchTable.deletion" />
           </a>
         </Popconfirm>,
+        /*
         <a key="subscribeAlert" href="https://procomponents.ant.design/">
           <FormattedMessage
             id="pages.searchTable.subscribeAlert"
-            defaultMessage="Subscribe to alerts"
           />
         </a>,
+        */
       ],
     },
   ];
@@ -288,13 +307,13 @@ const TableList: React.FC = () => {
     <PageContainer>
       <ProTable<API.FileInfoWithMd5Count, API.FileInfoWithMd5Count & {
         search_file_modified_time?: string[];
+        search_file_created_time?: string[];
         search_md5_count?: number[];
         file_extention_list?: string[];
         search_file_size?: number[];
       }>
         headerTitle={intl.formatMessage({
           id: 'pages.searchTable.title',
-          defaultMessage: 'Enquiry form',
         })}
         actionRef={actionRef}
         rowKey="key"
@@ -310,7 +329,7 @@ const TableList: React.FC = () => {
               history.push('/scan/file');
             }}
           >
-            <SearchOutlined /> <FormattedMessage id="pages.searchTable.startSearch" defaultMessage="Start search" />
+            <SearchOutlined /> <FormattedMessage id="pages.searchTable.startSearch" />
           </Button>,
         ]}
         //formRef={formRef}
@@ -320,10 +339,17 @@ const TableList: React.FC = () => {
             const form_params = response.data!;
 
             let search_file_modified_time: string[] | undefined = undefined;
-            if (form_params.start_modified_time != null || form_params.start_modified_time != null) {
+            if (form_params.start_modified_time != null || form_params.end_modified_time != null) {
               search_file_modified_time = [];
               search_file_modified_time.push(form_params.start_modified_time);
               search_file_modified_time.push(form_params.end_modified_time);
+            }
+
+            let search_file_created_time: string[] | undefined = undefined;
+            if (form_params.start_created_time != null || form_params.end_created_time != null) {
+              search_file_created_time = [];
+              search_file_created_time.push(form_params.start_created_time);
+              search_file_created_time.push(form_params.end_created_time);
             }
 
 
@@ -348,6 +374,7 @@ const TableList: React.FC = () => {
             return {
               file_info,
               search_file_modified_time,
+              search_file_created_time,
               search_md5_count,
               file_extention_list,
               search_file_size,
@@ -362,6 +389,7 @@ const TableList: React.FC = () => {
             current?: number;
             keywords?: string;
             search_file_modified_time?: string[];
+            search_file_created_time?: string[];
             search_md5_count?: number[];
             file_extention_list?: string[];
             search_file_size?: number[];
@@ -392,6 +420,10 @@ const TableList: React.FC = () => {
           if (params.search_file_modified_time) {
             list_param.start_modified_time = new Date(params.search_file_modified_time[0]).toISOString();
             list_param.end_modified_time = new Date(params.search_file_modified_time[1]).toISOString();
+          }
+          if (params.search_file_created_time) {
+            list_param.start_created_time = new Date(params.search_file_created_time[0]).toISOString();
+            list_param.end_created_time = new Date(params.search_file_created_time[1]).toISOString();
           }
           if (params.search_md5_count) {
             list_param.min_md5_count = params.search_md5_count[0];
@@ -430,17 +462,16 @@ const TableList: React.FC = () => {
         <FooterToolbar
           extra={
             <div>
-              <FormattedMessage id="pages.searchTable.chosen" defaultMessage="Chosen" />{' '}
+              <FormattedMessage id="pages.searchTable.chosen" />{' '}
               <a style={{ fontWeight: 600 }}>{selectedRowsState.length}</a>{' '}
-              <FormattedMessage id="pages.searchTable.item" defaultMessage="项" />
+              <FormattedMessage id="pages.searchTable.item" />
               &nbsp;&nbsp;
               <span>
                 <FormattedMessage
                   id="pages.searchTable.totalServiceCalls"
-                  defaultMessage="Total number of service calls"
                 />{' '}
                 {selectedRowsState.reduce((pre, item) => pre + item.md5_count!, 0)}{' '}
-                <FormattedMessage id="pages.searchTable.tenThousand" defaultMessage="万" />
+                <FormattedMessage id="pages.searchTable.tenThousand" />
               </span>
             </div>
           }
@@ -454,15 +485,15 @@ const TableList: React.FC = () => {
           >
             <FormattedMessage
               id="pages.searchTable.batchDeletion"
-              defaultMessage="Batch deletion"
             />
           </Button>
-          <Button type="primary">
+          {/** <Button type="primary">
             <FormattedMessage
               id="pages.searchTable.batchApproval"
-              defaultMessage="Batch approval"
             />
-          </Button>
+          </Button> */}
+
+
         </FooterToolbar>
       )}
 
