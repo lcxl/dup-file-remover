@@ -44,6 +44,25 @@ declare namespace API {
     force_delete?: any;
   };
 
+  type DeleteTrashFilePath = {
+    /** The directory path of trash file */
+    dir_path: string;
+    /** The name of trash file */
+    file_name: string;
+  };
+
+  type DeleteTrashFileRequest = {
+    /** The directory path of trash file */
+    dir_path: string;
+    /** The name of trash file */
+    file_name: string;
+  };
+
+  type DeleteTrashFilesRequest = {
+    /** The directory path of file to be deleted */
+    files: DeleteTrashFilePath[];
+  };
+
   type FakeCaptcha = {
     code?: number;
     status?: any;
@@ -187,6 +206,43 @@ declare namespace API {
     start_modified_time?: any;
   };
 
+  type listTrashFilesParams = {
+    /** Page number, start from 1 */
+    page_no: number;
+    /** Page count, must be greater than 0 */
+    page_count: number;
+    /** Minimum file size */
+    min_file_size: number;
+    /** Max file size */
+    max_file_size: number;
+    /** Dir path of the directory containing the file */
+    dir_path: any;
+    /** File name filtering */
+    file_name: any;
+    /** New field for file extension filtering */
+    file_extension: any;
+    /** Optional file extension list filtering, comma(,) separated values. */
+    file_extension_list: any;
+    /** MD5 hash of the file content, used for filtering files by their content. */
+    md5: any;
+    /** Optional time range filter for file creation. */
+    start_created_time: any;
+    end_created_time: any;
+    /** Optional time range filter for file modification. */
+    start_modified_time: any;
+    end_modified_time: any;
+    /** Minimum file md5 count */
+    min_md5_count: number;
+    /** Max file md5 count */
+    max_md5_count: number;
+    /** Optional order by field. */
+    order_by: any;
+    /** Optional order direction, true for ascending, false for descending. Default is descending. */
+    order_asc: any;
+    /** Optional filter for duplicate files in a specific directory path. If set, if files within this directory duplicate those outside of it, they will be displayed. */
+    filter_dup_file_by_dir_path: any;
+  };
+
   type LoginParams = {
     autoLogin: boolean;
     password: string;
@@ -316,6 +372,32 @@ declare namespace API {
     success: boolean;
   };
 
+  type RestResponseTrashListSettings = {
+    code: number;
+    /** Query parameters for listing files. */
+    data?: {
+      dir_path?: any;
+      end_created_time?: any;
+      end_modified_time?: any;
+      end_removed_time?: any;
+      file_extension?: any;
+      file_extension_list?: any;
+      file_name?: any;
+      max_file_size?: number;
+      md5?: any;
+      min_file_size?: number;
+      order_asc?: any;
+      order_by?: any;
+      page_count: number;
+      page_no: number;
+      start_created_time?: any;
+      start_modified_time?: any;
+      start_removed_time?: any;
+    };
+    message?: any;
+    success: boolean;
+  };
+
   type ScanSettings = {
     /** Ignore path to ignore during scan. If not provided, no paths will be ignored. */
     ignore_paths?: any;
@@ -359,6 +441,40 @@ declare namespace API {
     port?: number;
     /** trash path for deleted files */
     trash_path?: string;
+  };
+
+  type TrashListSettings = {
+    /** Dir path of the directory containing the file */
+    dir_path?: any;
+    end_created_time?: any;
+    end_modified_time?: any;
+    end_removed_time?: any;
+    /** New field for file extension filtering */
+    file_extension?: any;
+    /** Optional file extension list filtering, comma(,) separated values. */
+    file_extension_list?: any;
+    /** File name filtering */
+    file_name?: any;
+    /** Max file size */
+    max_file_size?: number;
+    /** MD5 hash of the file content, used for filtering files by their content. */
+    md5?: any;
+    /** Minimum file size */
+    min_file_size?: number;
+    /** Optional order direction, true for ascending, false for descending. Default is descending. */
+    order_asc?: any;
+    /** Optional order by field. */
+    order_by?: any;
+    /** Page count, must be greater than 0 */
+    page_count: number;
+    /** Page number, start from 1 */
+    page_no: number;
+    /** Optional time range filter for file creation. */
+    start_created_time?: any;
+    /** Optional time range filter for file modification. */
+    start_modified_time?: any;
+    /** Optional time range filter for file remove. */
+    start_removed_time?: any;
   };
 
   type UserResponeCurrentUser = {

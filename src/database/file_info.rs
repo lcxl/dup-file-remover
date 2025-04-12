@@ -169,3 +169,38 @@ pub struct FileInfoList {
     /// Total file count
     pub total_count: u64,
 }
+
+
+/// File info
+#[derive(Debug, Serialize, ToSchema, Clone)]
+pub struct TrashFileInfo {
+    /// Dir path of the directory containing the file
+    pub dir_path: String,
+    /// File name
+    pub file_name: String,
+    /// File extension
+    pub file_extension: Option<String>,
+    /// Remove time
+    pub remove_time: DateTime<Local>,
+    pub permissions: u32,
+    pub uid: u32,
+    pub gid: u32,
+    /// Created time
+    pub created: DateTime<Local>,
+    /// Modified time
+    pub modified: DateTime<Local>,
+    /// File md5
+    pub md5: String,
+    /// File size
+    pub size: u64,
+}
+
+
+/// Trash file info list with total count
+#[derive(Debug, Serialize, ToSchema)]
+pub struct TrashFileInfoList {
+    /// Trash file info list
+    pub trash_file_info_list: Vec<TrashFileInfo>,
+    /// Total trash file count
+    pub total_count: u64,
+}

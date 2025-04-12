@@ -22,6 +22,10 @@ use controller::{
     login::{change_password, get_captcha, login_account, logout_account},
     scan::{query_scan_settings, query_scan_status, start_scan, stop_scan},
     settings::{query_settings, update_settings},
+    trash::{
+        delete_trash_file, delete_trash_files, list_trash_files, query_trash_list_settings,
+        restore_trash_file,
+    },
     user::{get_current_user, get_notices, reject_anonymous_users},
 };
 use database::sqlite::PoolDatabaseManager;
@@ -128,11 +132,16 @@ pub fn run() -> Result<Server, DfrError> {
                     .service(list_files)
                     .service(delete_file)
                     .service(delete_files)
+                    .service(list_trash_files)
+                    .service(delete_trash_file)
+                    .service(delete_trash_files)
+                    .service(restore_trash_file)
                     .service(change_password)
                     .service(query_settings)
                     .service(update_settings)
                     .service(query_scan_settings)
-                    .service(query_list_settings),
+                    .service(query_list_settings)
+                    .service(query_trash_list_settings),
             )
             .openapi_service(|api| {
                 SwaggerUi::new("/swagger-ui/{_:.*}").url("/api/openapi.json", api)

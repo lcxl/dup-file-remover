@@ -5,16 +5,21 @@
 import * as changePassword from './changePassword';
 import * as deleteFile from './deleteFile';
 import * as deleteFiles from './deleteFiles';
+import * as deleteTrashFile from './deleteTrashFile';
+import * as deleteTrashFiles from './deleteTrashFiles';
 import * as getCaptcha from './getCaptcha';
 import * as getCurrentUser from './getCurrentUser';
 import * as getNotices from './getNotices';
 import * as listFiles from './listFiles';
+import * as listTrashFiles from './listTrashFiles';
 import * as loginAccount from './loginAccount';
 import * as logoutAccount from './logoutAccount';
 import * as queryListSettings from './queryListSettings';
 import * as queryScanSettings from './queryScanSettings';
 import * as queryScanStatus from './queryScanStatus';
 import * as querySettings from './querySettings';
+import * as queryTrashListSettings from './queryTrashListSettings';
+import * as restoreTrashFile from './restoreTrashFile';
 import * as startScan from './startScan';
 import * as stopScan from './stopScan';
 import * as updateSettings from './updateSettings';
@@ -31,6 +36,11 @@ export default {
   stopScan,
   querySettings,
   updateSettings,
+  deleteTrashFile,
+  restoreTrashFile,
+  deleteTrashFiles,
+  listTrashFiles,
+  queryTrashListSettings,
   loginAccount,
   getCaptcha,
   logoutAccount,

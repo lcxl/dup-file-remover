@@ -5,11 +5,14 @@ use log::{error, info};
 use rusqlite::{params_from_iter, Connection, Params, Result, ToSql};
 
 use crate::{
-    model::settings::ListSettings,
+    database::file_info::TrashFileInfo,
+    model::settings::{ListSettings, TrashListSettings},
     utils::{self, error::DfrError},
 };
 
-use super::file_info::{FileInfo, FileInfoList, FileInfoWithMd5Count, InodeInfo};
+use super::file_info::{
+    FileInfo, FileInfoList, FileInfoWithMd5Count, InodeInfo, TrashFileInfoList,
+};
 use r2d2_sqlite::SqliteConnectionManager;
 pub type Pool = r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>;
 
@@ -119,6 +122,7 @@ impl DatabaseManager {
         CREATE TABLE IF NOT EXISTS trash_info (
             dir_path TEXT NOT NULL,
             file_name TEXT NOT NULL,
+            file_extension TEXT NULL,
             remove_time DATETIME DEFAULT CURRENT_TIMESTAMP,
             permissions INTEGER NOT NULL,
             uid INTEGER NOT NULL,
@@ -435,13 +439,14 @@ impl DatabaseManager {
         tx.execute(sql, (&file_info.dir_path, &file_info.file_name))?;
 
         let sql = "
-            INSERT OR REPLACE INTO trash_info (dir_path, file_name, remove_time, permissions, uid, gid, created, modified, md5, size) 
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)";
+            INSERT OR REPLACE INTO trash_info (dir_path, file_name, file_extension, remove_time, permissions, uid, gid, created, modified, md5, size) 
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)";
         tx.execute(
             sql,
             (
                 &file_info.dir_path,
                 &file_info.file_name,
+                &file_info.file_extension,
                 Local::now(),
                 file_info.inode_info.permissions,
                 file_info.inode_info.uid,
@@ -458,7 +463,7 @@ impl DatabaseManager {
     }
 
     pub fn list_files(&self, query_list_params: &ListSettings) -> Result<FileInfoList, DfrError> {
-        let mut conn = self.pool.get().unwrap();
+        let mut conn = self.pool.get()?;
         let mut params: Vec<Arc<dyn ToSql>> = Vec::new();
         let mut sub_query_sql = String::from(
             "SELECT md5, count(md5) as md5_count
@@ -673,5 +678,194 @@ impl DatabaseManager {
             file_info_list: files,
             total_count,
         })
+    }
+
+    pub fn list_trash_files(
+        &self,
+        query_list_params: &TrashListSettings,
+    ) -> Result<TrashFileInfoList, DfrError> {
+        let mut conn = self.pool.get()?;
+        let mut params: Vec<Arc<dyn ToSql>> = Vec::new();
+        let mut query_sql = String::from(" FROM trash_file_info where");
+        if let Some(min_file_size) = query_list_params.min_file_size {
+            params.push(Arc::new(min_file_size));
+            query_sql += " and size >= ?";
+        }
+        if let Some(max_file_size) = query_list_params.max_file_size {
+            params.push(Arc::new(max_file_size));
+            query_sql += " and size < ?";
+        }
+
+        if let Some(dir_path) = query_list_params.dir_path.clone() {
+            query_sql += " and dir_path like ?";
+            params.push(Arc::new(format!("%{}%", dir_path)));
+        }
+        if let Some(file_name) = query_list_params.file_name.clone() {
+            query_sql += " and file_name like ?";
+            params.push(Arc::new(format!("%{}%", file_name)));
+        }
+        if let Some(file_extension) = query_list_params.file_extension.clone() {
+            query_sql += " and file_extension like ?";
+            params.push(Arc::new(format!("%{}%", file_extension)));
+        }
+        if let Some(file_extension_list) = query_list_params.file_extension_list.clone() {
+            query_sql += " and file_extension in (";
+            let file_extensions: Vec<&str> = file_extension_list.split(',').collect();
+            let mut file_extension_params = Vec::new();
+            for file_extension in file_extensions.iter() {
+                file_extension_params.push("?");
+                params.push(Arc::new(String::from(*file_extension)));
+            }
+            query_sql += (file_extension_params.join(",") + ")").as_str();
+        }
+        if let Some(md5) = query_list_params.md5.clone() {
+            query_sql += " and md5 = ?";
+            params.push(Arc::new(md5));
+        }
+        if let Some(start_created_time) = query_list_params.start_created_time.clone() {
+            query_sql += " and created >= ?";
+            params.push(Arc::new(start_created_time));
+        }
+        if let Some(end_created_time) = query_list_params.end_created_time.clone() {
+            query_sql += " and created <= ?";
+            params.push(Arc::new(end_created_time));
+        }
+
+        if let Some(start_modified_time) = query_list_params.start_modified_time.clone() {
+            query_sql += " and modified >= ?";
+            params.push(Arc::new(start_modified_time));
+            info!("start_modified_time: {:?}", start_modified_time);
+        }
+        if let Some(end_modified_time) = query_list_params.end_modified_time.clone() {
+            query_sql += " and modified <= ?";
+            params.push(Arc::new(end_modified_time));
+            info!("end_modified_time: {:?}", end_modified_time);
+        }
+
+        if let Some(start_removed_time) = query_list_params.start_removed_time.clone() {
+            query_sql += " and remove_time >= ?";
+            params.push(Arc::new(start_removed_time));
+            info!("start_removed_time: {:?}", start_removed_time);
+        }
+        if let Some(end_removed_time) = query_list_params.end_removed_time.clone() {
+            query_sql += " and remove_time <= ?";
+            params.push(Arc::new(end_removed_time));
+            info!("end_removed_time: {:?}", end_removed_time);
+        }
+
+        let count_sql = String::from("SELECT COUNT(*)") + &query_sql;
+        let count_params = params.to_vec();
+        info!("list file query count sql: {}", count_sql);
+
+        let mut sql = String::from("SELECT dir_path, file_name, file_extension, remove_time, permissions, uid, gid, created, modified, md5, size") + &query_sql;
+
+        // order by
+        let mut order_by_list: Vec<String> = Vec::new();
+        let mut order_asc = false;
+        if let Some(_order_asc) = query_list_params.order_asc {
+            order_asc = _order_asc;
+        }
+        if let Some(order_by) = query_list_params.order_by.clone() {
+            if order_by == "size" {
+                order_by_list.push(String::from(format!(
+                    "a1.size {}",
+                    if order_asc { "asc" } else { "desc" }
+                )));
+            }
+        }
+        if !order_by_list.is_empty() {
+            sql += format!(" order by {}", order_by_list.join(",")).as_str();
+        }
+        //  add limit
+        sql += " LIMIT ? OFFSET ?;";
+        params.push(Arc::new(query_list_params.page_count));
+        params.push(Arc::new(
+            (query_list_params.page_no - 1) * query_list_params.page_count,
+        ));
+
+        info!("List trash file query sql: {}", sql);
+
+        let trans = conn.transaction()?;
+        let mut stmt = trans.prepare(&count_sql)?;
+
+        let count_iter = stmt.query_map(params_from_iter(count_params.iter()), |row| {
+            let count: u64 = row.get(0)?;
+            Ok(count)
+        });
+        // get total count
+
+        let total_count = count_iter?.next().unwrap().unwrap();
+
+        let mut stmt = trans.prepare(&sql)?;
+        let file_iter = stmt.query_map(params_from_iter(params.iter()), |row| {
+            // dir_path, file_name, file_extension, remove_time, permissions, uid, gid, created, modified, md5, size
+            let trash_file_info = TrashFileInfo {
+                dir_path: row.get(0)?,
+                file_name: row.get(1)?,
+                file_extension: row.get(2)?,
+                remove_time: row.get(3)?,
+                permissions: row.get(4)?,
+                uid: row.get(5)?,
+                gid: row.get(6)?,
+                created: row.get(7)?,
+                modified: row.get(8)?,
+                md5: row.get(9)?,
+                size: row.get(10)?,
+            };
+
+            Ok(trash_file_info)
+        });
+        let mut files = Vec::new();
+        for item in file_iter? {
+            files.push(item?);
+        }
+        Ok(TrashFileInfoList {
+            trash_file_info_list: files,
+            total_count,
+        })
+    }
+
+    pub fn get_trash_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<TrashFileInfo> {
+        let conn = self.pool.get().unwrap();
+        let sql = "SELECT dir_path, file_name, file_extension, remove_time, permissions, uid, gid, created, modified, md5, size
+        FROM trash_file_info 
+        WHERE dir_path = ? and file_name = ?";
+        let mut stmt = conn.prepare(sql)?;
+        let trash_file_info = stmt.query_row([dir_path, file_name], |row| {
+            Ok(TrashFileInfo {
+                dir_path: row.get(0)?,
+                file_name: row.get(1)?,
+                file_extension: row.get(2)?,
+                remove_time: row.get(3)?,
+                permissions: row.get(4)?,
+                uid: row.get(5)?,
+                gid: row.get(6)?,
+                created: row.get(7)?,
+                modified: row.get(8)?,
+                md5: row.get(9)?,
+                size: row.get(10)?,
+            })
+        });
+        trash_file_info 
+    }
+
+    pub fn remove_trash_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<()> {
+        let mut conn = self.pool.get().unwrap();
+        let tx = conn.transaction()?;
+
+        let sql = "DELETE FROM trash_file_info WHERE dir_path = ? and file_name = ?";
+        tx.execute(sql, (dir_path, file_name))?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn remove_trash_file_by_md5(&self, md5: &str) -> Result<usize> {
+        let mut conn = self.pool.get().unwrap();
+        let tx = conn.transaction()?;
+
+        let sql = "DELETE FROM trash_file_info WHERE md5 = ?";
+        let usize = tx.execute(sql, [md5])?;
+        tx.commit()?;
+        Ok(usize)
     }
 }
