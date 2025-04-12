@@ -196,7 +196,7 @@ pub async fn delete_file(
     summary = "Delete files",
     request_body(content = DeleteFilesRequest),
     responses(
-        (status = 200, description = "Delete file successfully"),
+        (status = 200, description = "Delete files successfully"),
         (status = 400, description = "Bad request"),
         (status = 501, description = "Not implemented"),
     ),

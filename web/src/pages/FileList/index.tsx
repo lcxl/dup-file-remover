@@ -16,6 +16,7 @@ import { FormattedMessage, useIntl, history } from '@umijs/max';
 import { Button, Drawer, Input, message, Popconfirm, Select, SelectProps } from 'antd';
 import React, { useRef, useState } from 'react';
 import { queryListSettings } from '@/services/dfr/queryListSettings';
+import { deleteFiles } from '@/services/dfr/deleteFiles';
 
 
 /**
@@ -28,13 +29,17 @@ const handleRemove = async (selectedRows: API.FileInfoWithMd5Count[]) => {
   const hide = message.loading('正在删除');
   if (!selectedRows) return true;
   try {
-    const request: API.DeleteFileRequest = {
+    const request: API.DeleteFilesRequest = {
       delete_permanently: false,
-      file_name: "xxx",
-      dir_path: "yyy",
+      force_delete: false,
+      files: selectedRows.map((row) => ({
+        file_name: row.file_info.file_name,
+        dir_path: row.file_info.dir_path,
+      }))
     };
+
     //FIXME
-    await deleteFile(request);
+    await deleteFiles(request);
     hide();
     message.success('Deleted successfully and will refresh soon');
     return true;
@@ -316,7 +321,9 @@ const TableList: React.FC = () => {
           id: 'pages.searchTable.title',
         })}
         actionRef={actionRef}
-        rowKey="key"
+        rowKey={(record: API.FileInfoWithMd5Count) => {
+          return record.file_info.file_path;
+        }}
         search={{
           labelWidth: 120,
         }}
@@ -465,14 +472,6 @@ const TableList: React.FC = () => {
               <FormattedMessage id="pages.searchTable.chosen" />{' '}
               <a style={{ fontWeight: 600 }}>{selectedRowsState.length}</a>{' '}
               <FormattedMessage id="pages.searchTable.item" />
-              &nbsp;&nbsp;
-              <span>
-                <FormattedMessage
-                  id="pages.searchTable.totalServiceCalls"
-                />{' '}
-                {selectedRowsState.reduce((pre, item) => pre + item.md5_count!, 0)}{' '}
-                <FormattedMessage id="pages.searchTable.tenThousand" />
-              </span>
             </div>
           }
         >
