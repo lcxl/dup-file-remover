@@ -189,7 +189,7 @@ const TableList: React.FC = () => {
     {
       title: (
         <FormattedMessage
-          id="pages.searchTable.titleUpdatedAt"
+          id="pages.searchTable.removeTime"
         />
       ),
       sorter: true,
