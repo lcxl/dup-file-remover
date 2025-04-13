@@ -52,15 +52,16 @@ export default [
         component: './FileList',
       },
       {
-        path: '/scan/file',
-        name: 'scan-file',
-        component: './Scan',
-      },
-      {
         name: 'trash-list',
         path: '/scan/trash',
         component: './TrashList',
       },
+      {
+        path: '/scan/file',
+        name: 'scan-file',
+        component: './Scan',
+      },
+
     ],
   },
   {

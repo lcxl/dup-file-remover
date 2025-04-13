@@ -686,7 +686,7 @@ impl DatabaseManager {
     ) -> Result<TrashFileInfoList, DfrError> {
         let mut conn = self.pool.get()?;
         let mut params: Vec<Arc<dyn ToSql>> = Vec::new();
-        let mut query_sql = String::from(" FROM trash_file_info where 1=1");
+        let mut query_sql = String::from(" FROM trash_info where 1=1");
         if let Some(min_file_size) = query_list_params.min_file_size {
             params.push(Arc::new(min_file_size));
             query_sql += " and size >= ?";
@@ -828,7 +828,7 @@ impl DatabaseManager {
     pub fn get_trash_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<TrashFileInfo> {
         let conn = self.pool.get().unwrap();
         let sql = "SELECT dir_path, file_name, file_extension, remove_time, permissions, uid, gid, created, modified, md5, size
-        FROM trash_file_info 
+        FROM trash_info 
         WHERE dir_path = ? and file_name = ?";
         let mut stmt = conn.prepare(sql)?;
         let trash_file_info = stmt.query_row([dir_path, file_name], |row| {
@@ -853,7 +853,7 @@ impl DatabaseManager {
         let mut conn = self.pool.get().unwrap();
         let tx = conn.transaction()?;
 
-        let sql = "DELETE FROM trash_file_info WHERE dir_path = ? and file_name = ?";
+        let sql = "DELETE FROM trash_info WHERE dir_path = ? and file_name = ?";
         tx.execute(sql, (dir_path, file_name))?;
         tx.commit()?;
         Ok(())
@@ -863,7 +863,7 @@ impl DatabaseManager {
         let mut conn = self.pool.get().unwrap();
         let tx = conn.transaction()?;
 
-        let sql = "DELETE FROM trash_file_info WHERE md5 = ?";
+        let sql = "DELETE FROM trash_info WHERE md5 = ?";
         let usize = tx.execute(sql, [md5])?;
         tx.commit()?;
         Ok(usize)
