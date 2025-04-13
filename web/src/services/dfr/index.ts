@@ -20,6 +20,7 @@ import * as queryScanStatus from './queryScanStatus';
 import * as querySettings from './querySettings';
 import * as queryTrashListSettings from './queryTrashListSettings';
 import * as restoreTrashFile from './restoreTrashFile';
+import * as restoreTrashFiles from './restoreTrashFiles';
 import * as startScan from './startScan';
 import * as stopScan from './stopScan';
 import * as updateSettings from './updateSettings';
@@ -39,6 +40,7 @@ export default {
   deleteTrashFile,
   restoreTrashFile,
   deleteTrashFiles,
+  restoreTrashFiles,
   listTrashFiles,
   queryTrashListSettings,
   loginAccount,

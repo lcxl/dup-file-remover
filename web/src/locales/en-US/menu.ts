@@ -53,4 +53,5 @@ export default {
   'menu.scan': 'Scan',
   'menu.scan.scan-file': 'Scan File',
   'menu.scan.file-list': 'File Table',
+  'menu.scan.trash-list': 'Trash Table',
 };

@@ -56,6 +56,11 @@ export default [
         name: 'scan-file',
         component: './Scan',
       },
+      {
+        name: 'trash-list',
+        path: '/scan/trash',
+        component: './TrashList',
+      },
     ],
   },
   {

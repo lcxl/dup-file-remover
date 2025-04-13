@@ -1,22 +1,20 @@
-import { listFiles } from '@/services/dfr/listFiles';
-import { deleteFile } from '@/services/dfr/deleteFile';
 import { formatSize } from '@/utils/format_utils';
 import { SearchOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns, ProDescriptionsItemProps, ProFormInstance } from '@ant-design/pro-components';
 import {
   FooterToolbar,
-  ModalForm,
   PageContainer,
   ProDescriptions,
-  ProFormText,
-  ProFormTextArea,
   ProTable,
 } from '@ant-design/pro-components';
 import { FormattedMessage, useIntl, history } from '@umijs/max';
-import { Button, Drawer, Input, message, Popconfirm, Select, SelectProps } from 'antd';
+import { Button, Drawer, message, Popconfirm, Select, SelectProps } from 'antd';
 import React, { useRef, useState } from 'react';
-import { queryListSettings } from '@/services/dfr/queryListSettings';
-import { deleteFiles } from '@/services/dfr/deleteFiles';
+import { deleteTrashFiles } from '@/services/dfr/deleteTrashFiles';
+import { deleteTrashFile } from '@/services/dfr/deleteTrashFile';
+import { restoreTrashFile } from '@/services/dfr/restoreTrashFile';
+import { queryTrashListSettings } from '@/services/dfr/queryTrashListSettings';
+import { listTrashFiles } from '@/services/dfr/listTrashFiles';
 
 
 /**
@@ -25,27 +23,56 @@ import { deleteFiles } from '@/services/dfr/deleteFiles';
  *
  * @param selectedRows
  */
-const handleRemove = async (selectedRows: API.FileInfoWithMd5Count[]) => {
+const handleRemove = async (selectedRows: API.TrashFileInfo[]) => {
   const hide = message.loading('正在删除');
   if (!selectedRows) return true;
   try {
-    const request: API.DeleteFilesRequest = {
-      delete_permanently: false,
-      force_delete: false,
+    const request: API.DeleteTrashFilesRequest = {
+
       files: selectedRows.map((row) => ({
-        file_name: row.file_info.file_name,
-        dir_path: row.file_info.dir_path,
+        file_name: row.file_name,
+        dir_path: row.dir_path,
       }))
     };
 
     //FIXME
-    await deleteFiles(request);
+    await deleteTrashFiles(request);
     hide();
     message.success('Deleted successfully and will refresh soon');
     return true;
   } catch (error) {
     hide();
     message.error('Delete failed, please try again');
+    return false;
+  }
+};
+
+/**
+ *  Delete node
+ * @zh-CN 删除节点
+ *
+ * @param selectedRows
+ */
+const handleRestore = async (selectedRows: API.TrashFileInfo[]) => {
+  const hide = message.loading('正在恢复');
+  if (!selectedRows) return true;
+  try {
+    const request: API.RestoreTrashFilesRequest = {
+
+      files: selectedRows.map((row) => ({
+        file_name: row.file_name,
+        dir_path: row.dir_path,
+      }))
+    };
+
+    //FIXME
+    await deleteTrashFiles(request);
+    hide();
+    message.success('Restore files successfully and will refresh soon');
+    return true;
+  } catch (error) {
+    hide();
+    message.error('Restore failed, please try again');
     return false;
   }
 };
@@ -59,8 +86,8 @@ const TableList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
 
   const actionRef = useRef<ActionType>();
-  const [currentRow, setCurrentRow] = useState<API.FileInfoWithMd5Count>();
-  const [selectedRowsState, setSelectedRows] = useState<API.FileInfoWithMd5Count[]>([]);
+  const [currentRow, setCurrentRow] = useState<API.TrashFileInfo>();
+  const [selectedRowsState, setSelectedRows] = useState<API.TrashFileInfo[]>([]);
 
   /**
    * @en-US International configuration
@@ -68,14 +95,14 @@ const TableList: React.FC = () => {
    * */
   const intl = useIntl();
 
-  const columns: ProColumns<API.FileInfoWithMd5Count>[] = [
+  const columns: ProColumns<API.TrashFileInfo>[] = [
     {
       title: (
         <FormattedMessage
           id="pages.searchTable.updateForm.ruleName.nameLabel"
         />
       ),
-      dataIndex: ["file_info", "file_name"],
+      dataIndex: ["file_name"],
       tooltip: '文件名称',
       render: (dom, entity) => {
         return (
@@ -92,7 +119,7 @@ const TableList: React.FC = () => {
     },
     {
       title: <FormattedMessage id="pages.searchTable.fileExtention" />,
-      dataIndex: ["file_info", "file_extension"],
+      dataIndex: ["file_extension"],
       hideInForm: true,
       hideInTable: true,
       hideInSearch: true,
@@ -100,7 +127,7 @@ const TableList: React.FC = () => {
     {
       key: 'file_extention_list',
       title: <FormattedMessage id="pages.searchTable.fileExtentionList" />,
-      dataIndex: ["file_info", "file_extension"],
+      dataIndex: ["file_extension"],
       hideInForm: true,
       hideInDescriptions: true,
       hideInTable: true,
@@ -139,34 +166,19 @@ const TableList: React.FC = () => {
     },
     {
       title: <FormattedMessage id="pages.searchTable.titleDesc" />,
-      dataIndex: ["file_info", "dir_path"],
+      dataIndex: ["dir_path"],
       copyable: true,
       ellipsis: true,
     },
     {
-      title: (
-        <FormattedMessage
-          id="pages.searchTable.titleCallNo"
-        />
-      ),
-      dataIndex: 'md5_count',
-      //sorter: true,
-      hideInForm: true,
-      hideInSearch: true,
-      renderText: (val: string) =>
-        `${val}${intl.formatMessage({
-          id: 'pages.searchTable.tenThousand'
-        })}`,
-    },
-    {
       title: <FormattedMessage id="pages.searchTable.fileMd5" />,
-      dataIndex: ['file_info', "inode_info", "md5"],
+      dataIndex: ["md5"],
       //hideInForm: true,
       valueType: 'text',
     },
     {
       title: <FormattedMessage id="pages.searchTable.fileSize" />,
-      dataIndex: ['file_info', "inode_info", "size"],
+      dataIndex: ["size"],
       hideInSearch: true,
       sorter: true,
       renderText: (val: number) => {
@@ -182,7 +194,7 @@ const TableList: React.FC = () => {
       ),
       sorter: true,
       hideInSearch: true,
-      dataIndex: ["file_info", "scan_time"],
+      dataIndex: ["remove_time"],
       valueType: 'dateTime',
       renderFormItem: (item, { defaultRender, ...rest }, form) => {
         return defaultRender(item);
@@ -196,7 +208,7 @@ const TableList: React.FC = () => {
       ),
       //sorter: true,
       hideInSearch: true,
-      dataIndex: ["file_info", "inode_info", "created"],
+      dataIndex: ["created"],
       valueType: 'dateTime',
       renderFormItem: (item, { defaultRender, ...rest }, form) => {
         return defaultRender(item);
@@ -211,7 +223,7 @@ const TableList: React.FC = () => {
       ),
       hideInTable: true,
       hideInDescriptions: true,
-      dataIndex: ["file_info", "inode_info", "created"],
+      dataIndex: ["created"],
       valueType: 'dateTimeRange',
     },
     {
@@ -222,7 +234,7 @@ const TableList: React.FC = () => {
       ),
       //sorter: true,
       hideInSearch: true,
-      dataIndex: ["file_info", "inode_info", "modified"],
+      dataIndex: ["modified"],
       valueType: 'dateTime',
       renderFormItem: (item, { defaultRender, ...rest }, form) => {
         return defaultRender(item);
@@ -237,7 +249,7 @@ const TableList: React.FC = () => {
       ),
       hideInTable: true,
       hideInDescriptions: true,
-      dataIndex: ["file_info", "inode_info", "modified"],
+      dataIndex: ["modified"],
       valueType: 'dateTimeRange',
     },
     {
@@ -249,20 +261,7 @@ const TableList: React.FC = () => {
       ),
       hideInTable: true,
       hideInDescriptions: true,
-      dataIndex: ['file_info', "inode_info", "size"],
-      valueType: 'digitRange',
-      //initialValue: [2, null],
-    },
-    {
-      key: 'search_md5_count',
-      title: (
-        <FormattedMessage
-          id="pages.searchTable.searchMd5Count"
-        />
-      ),
-      hideInTable: true,
-      hideInDescriptions: true,
-      dataIndex: ["md5_count"],
+      dataIndex: ["size"],
       valueType: 'digitRange',
       //initialValue: [2, null],
     },
@@ -276,18 +275,18 @@ const TableList: React.FC = () => {
           description={intl.formatMessage({ id: "pages.searchTable.optionDeleteConfirmDescription" })}
           onConfirm={
             async () => {
-              console.log("Begin to delete file: ", record.file_info.dir_path, "/", record.file_info.file_name);
-              const response = await deleteFile({
-                dir_path: record.file_info.dir_path,
-                file_name: record.file_info.file_name
+              console.log("Begin to delete trash file: ", record.dir_path, "/", record.file_name);
+              const response = await deleteTrashFile({
+                dir_path: record.dir_path,
+                file_name: record.file_name
               }).catch((err) => {
-                console.log("request deleteFile error: " + err)
+                console.log("request deleteTrashFile error: " + err)
               });
               if (!response) {
                 return;
               }
 
-              console.log("deleted file: ", record.file_info.dir_path, "/", record.file_info.file_name, response);
+              console.log("deleted trash file: ", record.dir_path, "/", record.file_name, response);
               setCurrentRow(undefined);
               actionRef.current?.reloadAndRest?.();
             }
@@ -297,23 +296,41 @@ const TableList: React.FC = () => {
             <FormattedMessage id="pages.searchTable.deletion" />
           </a>
         </Popconfirm>,
-        /*
-        <a key="subscribeAlert" href="https://procomponents.ant.design/">
-          <FormattedMessage
-            id="pages.searchTable.subscribeAlert"
-          />
-        </a>,
-        */
+        <Popconfirm
+          title={intl.formatMessage({ id: "pages.searchTable.optionRestoreConfirmTitle" })}
+          description={intl.formatMessage({ id: "pages.searchTable.optionRestoreConfirmDescription" })}
+          onConfirm={
+            async () => {
+              console.log("Begin to restore trash file: ", record.dir_path, "/", record.file_name);
+              const response = await restoreTrashFile({
+                dir_path: record.dir_path,
+                file_name: record.file_name
+              }).catch((err) => {
+                console.log("request restoreTrashFile error: " + err)
+              });
+              if (!response) {
+                return;
+              }
+
+              console.log("restored trash file: ", record.dir_path, "/", record.file_name, response);
+              setCurrentRow(undefined);
+              actionRef.current?.reloadAndRest?.();
+            }
+          }
+        >
+          <a key="config">
+            <FormattedMessage id="pages.searchTable.restore" />
+          </a>
+        </Popconfirm>,
       ],
     },
   ];
 
   return (
     <PageContainer>
-      <ProTable<API.FileInfoWithMd5Count, API.FileInfoWithMd5Count & {
+      <ProTable<API.TrashFileInfo, API.TrashFileInfo & {
         search_file_modified_time?: string[];
         search_file_created_time?: string[];
-        search_md5_count?: number[];
         file_extention_list?: string[];
         search_file_size?: number[];
       }>
@@ -321,8 +338,8 @@ const TableList: React.FC = () => {
           id: 'pages.searchTable.title',
         })}
         actionRef={actionRef}
-        rowKey={(record: API.FileInfoWithMd5Count) => {
-          return record.file_info.file_path;
+        rowKey={(record: API.TrashFileInfo) => {
+          return record.dir_path + "/" + record.file_name;
         }}
         search={{
           labelWidth: 120,
@@ -342,7 +359,7 @@ const TableList: React.FC = () => {
         //formRef={formRef}
         form={{
           request: async () => {
-            const response = await queryListSettings();
+            const response = await queryTrashListSettings();
             const form_params = response.data!;
 
             let search_file_modified_time: string[] | undefined = undefined;
@@ -359,11 +376,6 @@ const TableList: React.FC = () => {
               search_file_created_time.push(form_params.end_created_time);
             }
 
-
-            let search_md5_count: (number | undefined)[] = [];
-            search_md5_count.push(form_params.min_md5_count);
-            search_md5_count.push(form_params.max_md5_count);
-
             let file_extention_list: string[] | undefined = undefined;
             if (form_params.file_extension_list != null) {
               file_extention_list = form_params.file_extension_list.split(',');
@@ -373,16 +385,11 @@ const TableList: React.FC = () => {
             search_file_size.push(form_params.min_file_size);
             search_file_size.push(form_params.max_file_size);
 
-            let file_info: API.FileInfo | undefined = undefined;
-            file_info = {
-              file_name: form_params.file_name,
-              dir_path: form_params.dir_path
-            };
             return {
-              file_info,
+              file_name: form_params.file_name,
+              dir_path: form_params.dir_path,
               search_file_modified_time,
               search_file_created_time,
-              search_md5_count,
               file_extention_list,
               search_file_size,
             };
@@ -391,13 +398,12 @@ const TableList: React.FC = () => {
         request={async (
           // 第一个参数 params 查询表单和 params 参数的结合
           // 第一个参数中一定会有 pageSize 和  current ，这两个参数是 antd 的规范
-          params: API.FileInfoWithMd5Count & {
+          params: API.TrashFileInfo & {
             pageSize?: number;
             current?: number;
             keywords?: string;
             search_file_modified_time?: string[];
             search_file_created_time?: string[];
-            search_md5_count?: number[];
             file_extention_list?: string[];
             search_file_size?: number[];
           },
@@ -412,17 +418,17 @@ const TableList: React.FC = () => {
           };
           console.info("sort", sort);
           console.info("filter", filter);
-          if (params.file_info?.file_name) {
-            list_param.file_name = params.file_info.file_name;
+          if (params.file_name) {
+            list_param.file_name = params.file_name;
           }
-          if (params.file_info?.dir_path) {
-            list_param.dir_path = params.file_info.dir_path;
+          if (params.dir_path) {
+            list_param.dir_path = params.dir_path;
           }
-          if (params.file_info?.inode_info?.md5) {
-            list_param.md5 = params.file_info.inode_info.md5;
+          if (params.md5) {
+            list_param.md5 = params.md5;
           }
-          if (params.file_info?.file_extension) {
-            list_param.file_extension = params.file_info.file_extension;
+          if (params.file_extension) {
+            list_param.file_extension = params.file_extension;
           }
           if (params.search_file_modified_time) {
             list_param.start_modified_time = new Date(params.search_file_modified_time[0]).toISOString();
@@ -432,10 +438,6 @@ const TableList: React.FC = () => {
             list_param.start_created_time = new Date(params.search_file_created_time[0]).toISOString();
             list_param.end_created_time = new Date(params.search_file_created_time[1]).toISOString();
           }
-          if (params.search_md5_count) {
-            list_param.min_md5_count = params.search_md5_count[0];
-            list_param.max_md5_count = params.search_md5_count[1];
-          }
           if (params.file_extention_list && params.file_extention_list.length > 0) {
             list_param.file_extension_list = params.file_extention_list.join(',').toLowerCase();
           }
@@ -443,14 +445,14 @@ const TableList: React.FC = () => {
             list_param.min_file_size = params.search_file_size[0];
             list_param.max_file_size = params.search_file_size[1];
           }
-          if (sort["file_info,inode_info,size"]) {
+          if (sort["size"]) {
             list_param.order_by = "size";
-            list_param.order_asc = sort["file_info,inode_info,size"] === 'descend' ? false : true;
+            list_param.order_asc = sort["size"] === 'descend' ? false : true;
           }
 
-          const msg = await listFiles(list_param);
+          const msg = await listTrashFiles(list_param);
           return {
-            data: msg.file_info_list,
+            data: msg.trash_file_info_list,
             // success 请返回 true，
             // 不然 table 会停止解析数据，即使有数据
             success: true,
@@ -510,17 +512,17 @@ const TableList: React.FC = () => {
         }}
         closable={false}
       >
-        {currentRow?.file_info.file_name && (
-          <ProDescriptions<API.FileInfoWithMd5Count>
+        {currentRow?.file_name && (
+          <ProDescriptions<API.TrashFileInfo>
             column={2}
-            title={currentRow?.file_info.file_name}
+            title={currentRow.file_name}
             request={async () => ({
               data: currentRow || {},
             })}
             params={{
-              id: currentRow?.file_info.file_name,
+              id: currentRow.file_name,
             }}
-            columns={columns as ProDescriptionsItemProps<API.FileInfoWithMd5Count>[]}
+            columns={columns as ProDescriptionsItemProps<API.TrashFileInfo>[]}
           />
         )}
       </Drawer>

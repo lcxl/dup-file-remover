@@ -686,7 +686,7 @@ impl DatabaseManager {
     ) -> Result<TrashFileInfoList, DfrError> {
         let mut conn = self.pool.get()?;
         let mut params: Vec<Arc<dyn ToSql>> = Vec::new();
-        let mut query_sql = String::from(" FROM trash_file_info where");
+        let mut query_sql = String::from(" FROM trash_file_info where 1=1");
         if let Some(min_file_size) = query_list_params.min_file_size {
             params.push(Arc::new(min_file_size));
             query_sql += " and size >= ?";

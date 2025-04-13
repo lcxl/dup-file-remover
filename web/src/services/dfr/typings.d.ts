@@ -212,35 +212,32 @@ declare namespace API {
     /** Page count, must be greater than 0 */
     page_count: number;
     /** Minimum file size */
-    min_file_size: number;
+    min_file_size?: number;
     /** Max file size */
-    max_file_size: number;
+    max_file_size?: number;
     /** Dir path of the directory containing the file */
-    dir_path: any;
+    dir_path?: any;
     /** File name filtering */
-    file_name: any;
+    file_name?: any;
     /** New field for file extension filtering */
-    file_extension: any;
+    file_extension?: any;
     /** Optional file extension list filtering, comma(,) separated values. */
-    file_extension_list: any;
+    file_extension_list?: any;
     /** MD5 hash of the file content, used for filtering files by their content. */
-    md5: any;
+    md5?: any;
     /** Optional time range filter for file creation. */
-    start_created_time: any;
-    end_created_time: any;
+    start_created_time?: any;
+    end_created_time?: any;
     /** Optional time range filter for file modification. */
-    start_modified_time: any;
-    end_modified_time: any;
-    /** Minimum file md5 count */
-    min_md5_count: number;
-    /** Max file md5 count */
-    max_md5_count: number;
+    start_modified_time?: any;
+    end_modified_time?: any;
+    /** Optional time range filter for file remove. */
+    start_removed_time?: any;
+    end_removed_time?: any;
     /** Optional order by field. */
-    order_by: any;
+    order_by?: any;
     /** Optional order direction, true for ascending, false for descending. Default is descending. */
-    order_asc: any;
-    /** Optional filter for duplicate files in a specific directory path. If set, if files within this directory duplicate those outside of it, they will be displayed. */
-    filter_dup_file_by_dir_path: any;
+    order_asc?: any;
   };
 
   type LoginParams = {
@@ -290,6 +287,18 @@ declare namespace API {
     password: string;
     /** Old username */
     username: string;
+  };
+
+  type RestoreTrashFilePath = {
+    /** The directory path of trash file */
+    dir_path: string;
+    /** The name of trash file */
+    file_name: string;
+  };
+
+  type RestoreTrashFilesRequest = {
+    /** The directory path of file to be restore */
+    files: RestoreTrashFilePath[];
   };
 
   type RestResponseI64 = {
@@ -441,6 +450,35 @@ declare namespace API {
     port?: number;
     /** trash path for deleted files */
     trash_path?: string;
+  };
+
+  type TrashFileInfo = {
+    /** Created time */
+    created: string;
+    /** Dir path of the directory containing the file */
+    dir_path: string;
+    /** File extension */
+    file_extension?: any;
+    /** File name */
+    file_name: string;
+    gid: number;
+    /** File md5 */
+    md5: string;
+    /** Modified time */
+    modified: string;
+    permissions: number;
+    /** Remove time */
+    remove_time: string;
+    /** File size */
+    size: number;
+    uid: number;
+  };
+
+  type TrashFileInfoList = {
+    /** Total trash file count */
+    total_count: number;
+    /** Trash file info list */
+    trash_file_info_list: TrashFileInfo[];
   };
 
   type TrashListSettings = {

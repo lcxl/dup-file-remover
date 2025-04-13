@@ -34,3 +34,19 @@ pub struct RestoreTrashFileRequest {
     /// The name of trash file
     pub file_name: String,
 }
+
+/// Restore trash file path
+#[derive(Deserialize, Serialize, ToSchema, Clone, Debug)]
+pub struct RestoreTrashFilePath {
+    /// The directory path of trash file
+    pub dir_path: String,
+    /// The name of trash file
+    pub file_name: String,
+}
+
+/// Request body for restore multiple trash files.
+#[derive(Deserialize, Serialize, ToSchema, Clone, Debug)]
+pub struct RestoreTrashFilesRequest {
+    /// The directory path of file to be restore
+    pub files: Vec<RestoreTrashFilePath>,
+}

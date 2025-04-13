@@ -53,4 +53,5 @@ export default {
   'menu.scan': '扫描',
   'menu.scan.scan-file': '扫描文件',
   'menu.scan.file-list': '文件列表',
+  'menu.scan.trash-list': '回收站',
 };

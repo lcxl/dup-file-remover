@@ -5,11 +5,11 @@ use log::{error, info, warn};
 use tokio::fs::{self, File};
 
 use crate::{
-    database::{file_info::FileInfoList, sqlite::PoolDatabaseManager},
+    database::{file_info::TrashFileInfoList, sqlite::PoolDatabaseManager},
     model::{
         common::{ErrorCode, RestResponse},
-        settings::{ListSettings, TrashListSettings},
-        trash::{DeleteTrashFileRequest, DeleteTrashFilesRequest, RestoreTrashFileRequest},
+        settings::TrashListSettings,
+        trash::{DeleteTrashFileRequest, DeleteTrashFilesRequest, RestoreTrashFileRequest, RestoreTrashFilesRequest},
     },
     utils::error::DfrError,
     SharedSettings,
@@ -31,9 +31,9 @@ pub async fn query_trash_list_settings(
 
 #[utoipa::path(
     summary = "List trash files",
-    params(ListSettings),
+    params(TrashListSettings),
     responses(
-        (status = 200, description = "The list of file info with md5 count", body=FileInfoList)
+        (status = 200, description = "The list of trash file", body=TrashFileInfoList)
     ),
 )]
 #[get("/trash/list")]
@@ -115,7 +115,7 @@ pub async fn delete_trash_file(
     summary = "Delete trash files",
     request_body(content = DeleteTrashFilesRequest),
     responses(
-        (status = 200, description = "Delete trash file successfully"),
+        (status = 200, description = "Delete trash files successfully"),
         (status = 400, description = "Bad request"),
         (status = 501, description = "Not implemented"),
     ),
@@ -196,5 +196,25 @@ pub async fn restore_trash_file(
         "Restore trash file '{}/{}' successfully",
         delete_trash_file_request.file_name, delete_trash_file_request.dir_path
     );
+    Ok(HttpResponse::Ok().finish())
+}
+
+
+#[utoipa::path(
+    summary = "Restore trash files",
+    request_body(content = RestoreTrashFilesRequest),
+    responses(
+        (status = 200, description = "Restore trash files successfully"),
+        (status = 400, description = "Bad request"),
+        (status = 501, description = "Not implemented"),
+    ),
+)]
+#[delete("/trash/files/restore")]
+pub async fn restore_trash_files(
+    requst_json: web::Json<RestoreTrashFilesRequest>,
+) -> Result<HttpResponse, AWError> {
+    let restore_file_request = requst_json.into_inner();
+
+    info!("Restore files {:?} successfully", restore_file_request.files);
     Ok(HttpResponse::Ok().finish())
 }

@@ -24,7 +24,7 @@ use controller::{
     settings::{query_settings, update_settings},
     trash::{
         delete_trash_file, delete_trash_files, list_trash_files, query_trash_list_settings,
-        restore_trash_file,
+        restore_trash_file, restore_trash_files,
     },
     user::{get_current_user, get_notices, reject_anonymous_users},
 };
@@ -136,6 +136,7 @@ pub fn run() -> Result<Server, DfrError> {
                     .service(delete_trash_file)
                     .service(delete_trash_files)
                     .service(restore_trash_file)
+                    .service(restore_trash_files)
                     .service(change_password)
                     .service(query_settings)
                     .service(update_settings)
