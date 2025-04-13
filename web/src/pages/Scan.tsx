@@ -3,10 +3,9 @@ import { queryScanStatus } from '@/services/dfr/queryScanStatus';
 import { startScan } from '@/services/dfr/startScan';
 import { stopScan } from '@/services/dfr/stopScan';
 import { formatSize } from '@/utils/format_utils';
-import { HeartTwoTone, SmileTwoTone } from '@ant-design/icons';
 import { PageContainer, ProForm, ProFormDigit, ProFormInstance, ProFormSelect, ProFormText, ProFormTextArea } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { Alert, Button, Card, Col, message, Row, Space, Typography } from 'antd';
+import { Button, Card, Col, message, Row, Space, Typography } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 const { Title, Paragraph, Text, Link } = Typography;
 const Admin: React.FC = () => {
@@ -132,7 +131,7 @@ const Admin: React.FC = () => {
             setScaning(true);
             console.log('startScan result:', result);
 
-            message.success('开始扫描...');
+            message.success(intl.formatMessage({ id: 'pages.scan.scanStartMessage' }));
           }}
         >
           <ProFormText name="scan_path" label={intl.formatMessage({ id: "pages.scan.dirPathToScan" })} />
@@ -142,14 +141,14 @@ const Admin: React.FC = () => {
             request={async (params) => {
               console.log("ProFormSelect request:", params)
               return [
-                { label: "jpg图片", value: 'jpg' },
-                { label: 'bmp图片', value: 'bmp' },
-                { label: 'png图片', value: 'png' },
-                { label: 'heic图片', value: 'heic' },
-                { label: 'mp4视频', value: 'mp4' },
-                { label: 'avi视频', value: 'avi' },
-                { label: 'mov视频', value: 'mov' },
-                { label: 'pdf文件', value: 'pdf' },
+                { label: "jpg", value: 'jpg' },
+                { label: 'bmp', value: 'bmp' },
+                { label: 'png', value: 'png' },
+                { label: 'heic', value: 'heic' },
+                { label: 'mp4', value: 'mp4' },
+                { label: 'avi', value: 'avi' },
+                { label: 'mov', value: 'mov' },
+                { label: 'pdf', value: 'pdf' },
               ];
             }}
           />

@@ -84,7 +84,7 @@ export default {
   'pages.searchTable.optionRestoreConfirmDescription': 'Are you sure to restore this file?',
   'pages.searchTable.removeTime': 'Remove Time',
   'pages.scan.scanStoppedMessage': 'Scan stopped',
-  'pages.scan.scanStartMessage': 'Starting scan',
+  'pages.scan.scanStartMessage': 'Start scanning...',
   'pages.scan.scanedFileCount': 'Scanned file count:',
   'pages.scan.currentDir': 'Current directory:',
   'pages.scan.currentFile': 'Current file:',

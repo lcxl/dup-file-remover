@@ -65,27 +65,26 @@ export default [
     ],
   },
   {
-    path: '/account',
-    name: 'account',
-    icon: 'user',
+    path: '/settings',
+    name: 'settings',
+    icon: 'setting',
     routes: [
       {
-        path: '/account',
-        redirect: '/account/settings',
+        path: '/settings',
+        redirect: '/settings/account',
       },
       {
-        path: '/account/settings',
-        name: 'settings',
+        name: 'account',
+        path: '/settings/account',
         component: './User/Settings',
       },
+      {
+        name: 'system',
+        path: '/settings/system',
+        access: 'canAdmin',
+        component: './System/Settings',
+      },
     ],
-  },
-  {
-    name: 'system.settings',
-    icon: 'setting',
-    path: '/system/settings',
-    access: 'canAdmin',
-    component: './System/Settings',
   },
   {
     path: '/',

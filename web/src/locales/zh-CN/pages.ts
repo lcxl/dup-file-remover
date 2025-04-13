@@ -82,7 +82,7 @@ export default {
   'pages.searchTable.optionRestoreConfirmDescription': '是否确定要恢复此文件？',
   'pages.searchTable.removeTime': '删除时间',
   'pages.scan.scanStoppedMessage': '扫描已停止',
-  'pages.scan.scanStartMessage': '开始扫描',
+  'pages.scan.scanStartMessage': '开始扫描...',
   'pages.scan.scanedFileCount': '已扫描文件数：',
   'pages.scan.currentDir': '当前目录：',
   'pages.scan.currentFile': '当前文件：',

@@ -1,6 +1,6 @@
 import { logoutAccount } from '@/services/dfr/logoutAccount';
 import { LogoutOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons';
-import { history, useModel } from '@umijs/max';
+import { history, useIntl, useModel } from '@umijs/max';
 import { Spin } from 'antd';
 import { createStyles } from 'antd-style';
 import { stringify } from 'querystring';
@@ -39,6 +39,7 @@ const useStyles = createStyles(({ token }) => {
 });
 
 export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ menu, children }) => {
+  const intl = useIntl();
   /**
    * 退出登录，并且将当前的 url 保存
    */
@@ -73,7 +74,7 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ menu, childre
           loginOut();
           break;
         case 'settings':
-          history.push(`/account/settings`);
+          history.push(`/settings/account`);
           break;
         default:
           history.push(`/account/${key}`);
@@ -117,7 +118,7 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ menu, childre
           {
             key: 'settings',
             icon: <SettingOutlined />,
-            label: '个人设置',
+          label: intl.formatMessage({ id: 'menu.settings.account' }),
           },
           {
             type: 'divider' as const,
@@ -127,7 +128,7 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({ menu, childre
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: '退出登录',
+      label: intl.formatMessage({ id: 'menu.account.logout' }),
     },
   ];
 

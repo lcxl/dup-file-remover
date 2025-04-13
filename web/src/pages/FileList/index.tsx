@@ -2,14 +2,11 @@ import { listFiles } from '@/services/dfr/listFiles';
 import { deleteFile } from '@/services/dfr/deleteFile';
 import { formatSize } from '@/utils/format_utils';
 import { SearchOutlined } from '@ant-design/icons';
-import type { ActionType, ProColumns, ProDescriptionsItemProps, ProFormInstance } from '@ant-design/pro-components';
+import type { ActionType, ColumnsState, ProColumns, ProDescriptionsItemProps, ProFormInstance } from '@ant-design/pro-components';
 import {
   FooterToolbar,
-  ModalForm,
   PageContainer,
   ProDescriptions,
-  ProFormText,
-  ProFormTextArea,
   ProTable,
 } from '@ant-design/pro-components';
 import { FormattedMessage, useIntl, history } from '@umijs/max';
@@ -61,7 +58,26 @@ const TableList: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<API.FileInfoWithMd5Count>();
   const [selectedRowsState, setSelectedRows] = useState<API.FileInfoWithMd5Count[]>([]);
-
+  const [columnsStateMap, setColumnsStateMap] = useState<
+    Record<string, ColumnsState>
+  >({
+    "file_info,scan_time": {
+      show: false,
+      order: 0,
+    },
+    "file_info,inode_info,md5": {
+      show: false,
+      order: 0,
+    },
+    "file_info,inode_info,created": {
+      show: false,
+      order: 0,
+    },
+    "file_info,inode_info,modified": {
+      show: false,
+      order: 0,
+    },
+  });
   /**
    * @en-US International configuration
    * @zh-CN 国际化配置
@@ -326,6 +342,10 @@ const TableList: React.FC = () => {
         }}
         search={{
           labelWidth: 120,
+        }}
+        columnsState={{
+          value: columnsStateMap,
+          onChange: setColumnsStateMap,
         }}
         toolBarRender={() => [
           <Button
