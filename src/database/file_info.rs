@@ -1,4 +1,4 @@
-use std::os::linux::fs::MetadataExt;
+use std::{os::linux::fs::MetadataExt, path::PathBuf};
 
 use chrono::{DateTime, Local};
 use log::debug;
@@ -170,7 +170,6 @@ pub struct FileInfoList {
     pub total_count: u64,
 }
 
-
 /// File info
 #[derive(Debug, Serialize, ToSchema, Clone)]
 pub struct TrashFileInfo {
@@ -195,6 +194,13 @@ pub struct TrashFileInfo {
     pub size: u64,
 }
 
+impl TrashFileInfo {
+    pub fn get_file_path(&self) -> String {
+        let mut file_path = PathBuf::from(self.dir_path.as_str());
+        file_path.push(self.file_name.as_str());
+        return file_path.to_string_lossy().to_string();
+    }
+}
 
 /// Trash file info list with total count
 #[derive(Debug, Serialize, ToSchema)]

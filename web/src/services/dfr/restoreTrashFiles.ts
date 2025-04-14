@@ -2,13 +2,13 @@
 /* eslint-disable */
 import { request } from '@umijs/max';
 
-/** Restore trash files DELETE /api/dfr/trash/files/restore */
+/** Restore trash files POST /api/dfr/trash/files/restore */
 export async function restoreTrashFiles(
   body: API.RestoreTrashFilesRequest,
   options?: { [key: string]: any },
 ) {
   return request<any>('/api/dfr/trash/files/restore', {
-    method: 'DELETE',
+    method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },

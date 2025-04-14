@@ -155,20 +155,20 @@ impl DatabaseManager {
     pub fn update_version(&self, file_info: &FileInfo) -> Result<usize, DfrError> {
         let conn = self.pool.get()?;
         let mut statement =
-            conn.prepare("UPDATE file_info SET version = ? WHERE dir_path = ? and file_name = ?")?;
+            conn.prepare("UPDATE file_info SET version = ? WHERE dir_path = ? AND file_name = ?")?;
         Ok(statement.execute((file_info.version, &file_info.dir_path, &file_info.file_name))?)
     }
 
     pub fn insert_file_info(&self, file_info: &FileInfo) -> Result<(), DfrError> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
-        let node_info_do_result = self.query_node_info_do_by_inode(
+        let inode_info_do_result = self.query_inode_info_do_by_inode(
             &tx,
             file_info.inode_info.dev_id,
             file_info.inode_info.inode,
         );
-        let last_insert_id = if node_info_do_result.is_err() {
-            let query_error = node_info_do_result.err().unwrap();
+        let last_insert_id = if inode_info_do_result.is_err() {
+            let query_error = inode_info_do_result.err().unwrap();
             match query_error {
                 rusqlite::Error::QueryReturnedNoRows => info!(
                     "Inode {} (dev_id: {}) not found in database, try to insert, error: {:?}",
@@ -199,13 +199,13 @@ impl DatabaseManager {
             )?;
             tx.last_insert_rowid()
         } else {
-            let db_node_info = node_info_do_result?;
-            if db_node_info.inode_info != file_info.inode_info {
-                info!("Need to update file {} inode info, db inode info: {:?}, current file inode info: {:?}",file_info.file_path, db_node_info , file_info.inode_info);
+            let db_inode_info = inode_info_do_result?;
+            if db_inode_info.inode_info != file_info.inode_info {
+                info!("Need to update file {} inode info, db inode info: {:?}, current file inode info: {:?}",file_info.file_path, db_inode_info , file_info.inode_info);
                 let sql = "
-                update inode_info 
-                set inode=?1, dev_id=?2, permissions=?3, nlink=?4, uid=?5, gid=?6, created=?7, modified=?8, md5=?9, size=?10
-                where id=?11
+                UPDATE inode_info 
+                SET inode=?1, dev_id=?2, permissions=?3, nlink=?4, uid=?5, gid=?6, created=?7, modified=?8, md5=?9, size=?10
+                WHERE id=?11
                 ";
                 tx.execute(
                     sql,
@@ -220,11 +220,11 @@ impl DatabaseManager {
                         &file_info.inode_info.modified,
                         &file_info.inode_info.md5,
                         file_info.inode_info.size,
-                        db_node_info.id,
+                        db_inode_info.id,
                     ),
                 )?;
             }
-            db_node_info.id
+            db_inode_info.id
         };
 
         let sql = "INSERT OR REPLACE INTO file_info (inode_info_id, dir_path, file_name, file_extension, scan_time, version) 
@@ -251,7 +251,7 @@ impl DatabaseManager {
         Ok(())
     }
 
-    pub fn query_node_info_do_by_inode(
+    pub fn query_inode_info_do_by_inode(
         &self,
         conn: &Connection,
         dev_id: u64,
@@ -259,22 +259,22 @@ impl DatabaseManager {
     ) -> Result<InodeInfoDO> {
         let sql = "
         SELECT inode, dev_id, permissions, nlink, uid, gid, created, modified, md5, size, id
-        from inode_info
-        WHERE dev_id = ? and inode = ?
+        FROM inode_info
+        WHERE dev_id = ? AND inode = ?
         ";
-        self.query_node_info_do(&conn, sql, [dev_id, node_id])
+        self.query_inode_info_do(&conn, sql, [dev_id, node_id])
     }
 
-    pub fn get_node_info_do_by_id(&self, conn: &Connection, id: u64) -> Result<InodeInfoDO> {
+    pub fn get_inode_info_do_by_id(&self, conn: &Connection, id: u64) -> Result<InodeInfoDO> {
         let sql = "
         SELECT inode, dev_id, permissions, nlink, uid, gid, created, modified, md5, size, id
-        from inode_info
+        FROM inode_info
         WHERE id = ?
         ";
-        self.query_node_info_do(&conn, sql, [id])
+        self.query_inode_info_do(&conn, sql, [id])
     }
 
-    fn query_node_info_do(
+    fn query_inode_info_do(
         &self,
         conn: &Connection,
         sql: &str,
@@ -300,8 +300,12 @@ impl DatabaseManager {
         })
     }
 
-    pub fn get_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<FileInfo> {
-        let conn = self.pool.get().unwrap();
+    pub fn query_file_info_do_by_path(
+        &self,
+        conn: &Connection,
+        dir_path: &str,
+        file_name: &str,
+    ) -> Result<FileInfoDO> {
         let sql = "SELECT inode_info_id, dir_path, file_name, file_extension, scan_time, version
         FROM file_info 
         WHERE dir_path = ? and file_name = ?";
@@ -316,18 +320,13 @@ impl DatabaseManager {
                 version: row.get(5)?,
             })
         });
-        if file_iter.is_err() {
-            return Err(file_iter.err().unwrap());
-        }
-        let file_info_do = file_iter?;
+        file_iter
+    }
 
-        let inode_info_result = self.get_node_info_do_by_id(&conn, file_info_do.inode_info_id);
-
-        if inode_info_result.is_err() {
-            return Err(inode_info_result.err().unwrap());
-        }
-
-        let inode_info_do = inode_info_result?;
+    pub fn get_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<FileInfo> {
+        let conn = self.pool.get().unwrap();
+        let file_info_do = self.query_file_info_do_by_path(&conn, dir_path, file_name)?;
+        let inode_info_do = self.get_inode_info_do_by_id(&conn, file_info_do.inode_info_id)?;
         let file_info = FileInfo::from_do(inode_info_do.inode_info, file_info_do);
         return Ok(file_info);
     }
@@ -417,12 +416,15 @@ impl DatabaseManager {
     }
 
     /// remove not existed inodes from database
-    pub fn remove_deleted_inode(&self) -> Result<()> {
+    pub fn remove_deleted_inodes(&self) -> Result<()> {
         let mut conn = self.pool.get().unwrap();
         let tx = conn.transaction()?;
 
-        let sql =
-            "DELETE FROM inode_info WHERE id not in (select DISTINCT inode_info_id from file_info)";
+        let sql = "
+            DELETE FROM inode_info 
+            WHERE id NOT IN (
+                SELECT DISTINCT inode_info_id 
+                FROM file_info)";
         let update_rows = tx.execute(sql, ())?;
         tx.commit()?;
         if update_rows > 0 {
@@ -431,12 +433,40 @@ impl DatabaseManager {
         Ok(())
     }
 
-    pub fn move_file_to_trash(&self, file_info: &FileInfo) -> Result<()> {
-        let mut conn = self.pool.get().unwrap();
+    /// remove not existed inodes from database
+    pub fn remove_inode_by_id(&self, conn: &Connection, id: u64) -> Result<usize> {
+        let sql = "
+            DELETE FROM inode_info 
+            WHERE id =?";
+        let update_rows = conn.execute(sql, [id])?;
+
+        if update_rows > 0 {
+            info!("deleted inode_info by id {}", id);
+        }
+        Ok(update_rows)
+    }
+
+    pub fn move_file_to_trash(&self, file_info: &FileInfo) -> Result<(), DfrError> {
+        let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let md5 = file_info.inode_info.md5.clone().unwrap();
-        let sql = "DELETE FROM file_info WHERE dir_path = ? and file_name = ?";
+        let file_info_do =
+            self.query_file_info_do_by_path(&tx, &file_info.dir_path, &file_info.file_name)?;
+
+        let sql = "SELECT COUNT(*) FROM file_info where inode_info_id = ?";
+        let file_count = tx.query_row(sql, [file_info_do.inode_info_id], |row| {
+            let file_count: u64 = row.get(0)?;
+            Ok(file_count)
+        })?;
+
+        // delete file info from db
+        let sql = "DELETE FROM file_info WHERE dir_path = ? AND file_name = ?";
         tx.execute(sql, (&file_info.dir_path, &file_info.file_name))?;
+
+        if file_count <= 1 {
+            // delete inode info from db
+            self.remove_inode_by_id(&tx, file_info_do.inode_info_id)?;
+        }
 
         let sql = "
             INSERT OR REPLACE INTO trash_info (dir_path, file_name, file_extension, remove_time, permissions, uid, gid, created, modified, md5, size) 
@@ -466,17 +496,17 @@ impl DatabaseManager {
         let mut conn = self.pool.get()?;
         let mut params: Vec<Arc<dyn ToSql>> = Vec::new();
         let mut sub_query_sql = String::from(
-            "SELECT md5, count(md5) as md5_count
+            "SELECT md5, COUNT(md5) AS md5_count
             FROM inode_info 
             WHERE 1=1",
         );
         if let Some(min_file_size) = query_list_params.min_file_size {
             params.push(Arc::new(min_file_size));
-            sub_query_sql += " and size >= ?";
+            sub_query_sql += " AND size >= ?";
         }
         if let Some(max_file_size) = query_list_params.max_file_size {
             params.push(Arc::new(max_file_size));
-            sub_query_sql += " and size < ?";
+            sub_query_sql += " AND size < ?";
         }
         sub_query_sql += " GROUP BY md5";
         let mut filter_sub_query_sql = String::new();
@@ -495,56 +525,56 @@ impl DatabaseManager {
                 }
                 let dir_path = query_list_params.dir_path.clone().unwrap();
                 let mut sub_query_sql = String::from(
-                    "SELECT b1.md5, count(b1.md5) as md5_count
-                    FROM inode_info as b1,
-                        file_info as b2
+                    "SELECT b1.md5, COUNT(b1.md5) AS md5_count
+                    FROM inode_info AS b1,
+                        file_info AS b2
                     WHERE b1.id = b2.inode_info_id",
                 );
                 if let Some(min_file_size) = query_list_params.min_file_size {
                     params.push(Arc::new(min_file_size));
-                    sub_query_sql += " and b1.size >= ?";
+                    sub_query_sql += " AND b1.size >= ?";
                 }
                 if let Some(max_file_size) = query_list_params.max_file_size {
                     params.push(Arc::new(max_file_size));
-                    sub_query_sql += " and b1.size < ?";
+                    sub_query_sql += " AND b1.size < ?";
                 }
 
                 params.push(Arc::new(format!("%{}%", dir_path)));
-                sub_query_sql += " and b2.dir_path like ?";
+                sub_query_sql += " AND b2.dir_path LIKE ?";
 
                 sub_query_sql += " GROUP BY b1.md5";
-                filter_sub_query_sql = format!(", ({}) as a4", sub_query_sql);
-                filter_select_params = String::from(", a4.md5_count as filter_md5_count");
-                filter_join_sql = String::from("and a4.md5 = a3.md5");
+                filter_sub_query_sql = format!(", ({}) AS a4", sub_query_sql);
+                filter_select_params = String::from(", a4.md5_count AS filter_md5_count");
+                filter_join_sql = String::from("AND a4.md5 = a3.md5");
                 has_filter_md5_count = true;
             }
         }
 
         let mut query_sql = format!(
-            " FROM inode_info as a1, 
-                file_info as a2, 
-                ({}) as a3
+            " FROM inode_info AS a1, 
+                file_info AS a2, 
+                ({}) AS a3
                 {}
-            where 
+            WHERE 
                 a1.id = a2.inode_info_id 
-                and a1.md5 = a3.md5
+                AND a1.md5 = a3.md5
                 {}",
             sub_query_sql, filter_sub_query_sql, filter_join_sql
         );
         if let Some(dir_path) = query_list_params.dir_path.clone() {
-            query_sql += " and a2.dir_path like ?";
+            query_sql += " AND a2.dir_path LIKE ?";
             params.push(Arc::new(format!("%{}%", dir_path)));
         }
         if let Some(file_name) = query_list_params.file_name.clone() {
-            query_sql += " and a2.file_name like ?";
+            query_sql += " AND a2.file_name LIKE ?";
             params.push(Arc::new(format!("%{}%", file_name)));
         }
         if let Some(file_extension) = query_list_params.file_extension.clone() {
-            query_sql += " and a2.file_extension like ?";
+            query_sql += " AND a2.file_extension LIKE ?";
             params.push(Arc::new(format!("%{}%", file_extension)));
         }
         if let Some(file_extension_list) = query_list_params.file_extension_list.clone() {
-            query_sql += " and a2.file_extension in (";
+            query_sql += " AND a2.file_extension IN (";
             let file_extensions: Vec<&str> = file_extension_list.split(',').collect();
             let mut file_extension_params = Vec::new();
             for file_extension in file_extensions.iter() {
@@ -554,35 +584,35 @@ impl DatabaseManager {
             query_sql += (file_extension_params.join(",") + ")").as_str();
         }
         if let Some(md5) = query_list_params.md5.clone() {
-            query_sql += " and a1.md5 = ?";
+            query_sql += " AND a1.md5 = ?";
             params.push(Arc::new(md5));
         }
         if let Some(start_created_time) = query_list_params.start_created_time.clone() {
-            query_sql += " and a1.created >= ?";
+            query_sql += " AND a1.created >= ?";
             params.push(Arc::new(start_created_time));
         }
         if let Some(end_created_time) = query_list_params.end_created_time.clone() {
-            query_sql += " and a1.created <= ?";
+            query_sql += " AND a1.created <= ?";
             params.push(Arc::new(end_created_time));
         }
 
         if let Some(start_modified_time) = query_list_params.start_modified_time.clone() {
-            query_sql += " and a1.modified >= ?";
+            query_sql += " AND a1.modified >= ?";
             params.push(Arc::new(start_modified_time));
             info!("start_modified_time: {:?}", start_modified_time);
         }
         if let Some(end_modified_time) = query_list_params.end_modified_time.clone() {
-            query_sql += " and a1.modified <= ?";
+            query_sql += " AND a1.modified <= ?";
             params.push(Arc::new(end_modified_time));
             info!("end_modified_time: {:?}", end_modified_time);
         }
         if let Some(min_md5_count) = query_list_params.min_md5_count.clone() {
-            query_sql += " and a3.md5_count >= ?";
+            query_sql += " AND a3.md5_count >= ?";
             params.push(Arc::new(min_md5_count));
         }
 
         if let Some(max_md5_count) = query_list_params.max_md5_count.clone() {
-            query_sql += " and a3.md5_count < ?";
+            query_sql += " AND a3.md5_count < ?";
             params.push(Arc::new(max_md5_count));
         }
 
@@ -603,12 +633,12 @@ impl DatabaseManager {
             if order_by == "size" {
                 order_by_list.push(String::from(format!(
                     "a1.size {}",
-                    if order_asc { "asc" } else { "desc" }
+                    if order_asc { "ASC" } else { "DESC" }
                 )));
             }
         }
         //order by md5_count default
-        order_by_list.push(String::from("a3.md5_count desc"));
+        order_by_list.push(String::from("a3.md5_count DESC"));
         sql += format!(" order by {}", order_by_list.join(",")).as_str();
 
         //  add limit
@@ -686,30 +716,30 @@ impl DatabaseManager {
     ) -> Result<TrashFileInfoList, DfrError> {
         let mut conn = self.pool.get()?;
         let mut params: Vec<Arc<dyn ToSql>> = Vec::new();
-        let mut query_sql = String::from(" FROM trash_info where 1=1");
+        let mut query_sql = String::from(" FROM trash_info WHERE 1=1");
         if let Some(min_file_size) = query_list_params.min_file_size {
             params.push(Arc::new(min_file_size));
-            query_sql += " and size >= ?";
+            query_sql += " AND size >= ?";
         }
         if let Some(max_file_size) = query_list_params.max_file_size {
             params.push(Arc::new(max_file_size));
-            query_sql += " and size < ?";
+            query_sql += " AND size < ?";
         }
 
         if let Some(dir_path) = query_list_params.dir_path.clone() {
-            query_sql += " and dir_path like ?";
+            query_sql += " AND dir_path LIKE ?";
             params.push(Arc::new(format!("%{}%", dir_path)));
         }
         if let Some(file_name) = query_list_params.file_name.clone() {
-            query_sql += " and file_name like ?";
+            query_sql += " AND file_name LIKE ?";
             params.push(Arc::new(format!("%{}%", file_name)));
         }
         if let Some(file_extension) = query_list_params.file_extension.clone() {
-            query_sql += " and file_extension like ?";
+            query_sql += " AND file_extension LIKE ?";
             params.push(Arc::new(format!("%{}%", file_extension)));
         }
         if let Some(file_extension_list) = query_list_params.file_extension_list.clone() {
-            query_sql += " and file_extension in (";
+            query_sql += " AND file_extension IN (";
             let file_extensions: Vec<&str> = file_extension_list.split(',').collect();
             let mut file_extension_params = Vec::new();
             for file_extension in file_extensions.iter() {
@@ -719,36 +749,36 @@ impl DatabaseManager {
             query_sql += (file_extension_params.join(",") + ")").as_str();
         }
         if let Some(md5) = query_list_params.md5.clone() {
-            query_sql += " and md5 = ?";
+            query_sql += " AND md5 = ?";
             params.push(Arc::new(md5));
         }
         if let Some(start_created_time) = query_list_params.start_created_time.clone() {
-            query_sql += " and created >= ?";
+            query_sql += " AND created >= ?";
             params.push(Arc::new(start_created_time));
         }
         if let Some(end_created_time) = query_list_params.end_created_time.clone() {
-            query_sql += " and created <= ?";
+            query_sql += " AND created <= ?";
             params.push(Arc::new(end_created_time));
         }
 
         if let Some(start_modified_time) = query_list_params.start_modified_time.clone() {
-            query_sql += " and modified >= ?";
+            query_sql += " AND modified >= ?";
             params.push(Arc::new(start_modified_time));
             info!("start_modified_time: {:?}", start_modified_time);
         }
         if let Some(end_modified_time) = query_list_params.end_modified_time.clone() {
-            query_sql += " and modified <= ?";
+            query_sql += " AND modified <= ?";
             params.push(Arc::new(end_modified_time));
             info!("end_modified_time: {:?}", end_modified_time);
         }
 
         if let Some(start_removed_time) = query_list_params.start_removed_time.clone() {
-            query_sql += " and remove_time >= ?";
+            query_sql += " AND remove_time >= ?";
             params.push(Arc::new(start_removed_time));
             info!("start_removed_time: {:?}", start_removed_time);
         }
         if let Some(end_removed_time) = query_list_params.end_removed_time.clone() {
-            query_sql += " and remove_time <= ?";
+            query_sql += " AND remove_time <= ?";
             params.push(Arc::new(end_removed_time));
             info!("end_removed_time: {:?}", end_removed_time);
         }
@@ -769,12 +799,12 @@ impl DatabaseManager {
             if order_by == "size" {
                 order_by_list.push(String::from(format!(
                     "a1.size {}",
-                    if order_asc { "asc" } else { "desc" }
+                    if order_asc { "ASC" } else { "DESC" }
                 )));
             }
         }
         if !order_by_list.is_empty() {
-            sql += format!(" order by {}", order_by_list.join(",")).as_str();
+            sql += format!(" ORDER BY {}", order_by_list.join(",")).as_str();
         }
         //  add limit
         sql += " LIMIT ? OFFSET ?;";
@@ -827,9 +857,10 @@ impl DatabaseManager {
 
     pub fn get_trash_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<TrashFileInfo> {
         let conn = self.pool.get().unwrap();
-        let sql = "SELECT dir_path, file_name, file_extension, remove_time, permissions, uid, gid, created, modified, md5, size
-        FROM trash_info 
-        WHERE dir_path = ? and file_name = ?";
+        let sql = "
+            SELECT dir_path, file_name, file_extension, remove_time, permissions, uid, gid, created, modified, md5, size
+            FROM trash_info 
+            WHERE dir_path = ? AND file_name = ?";
         let mut stmt = conn.prepare(sql)?;
         let trash_file_info = stmt.query_row([dir_path, file_name], |row| {
             Ok(TrashFileInfo {
@@ -846,14 +877,16 @@ impl DatabaseManager {
                 size: row.get(10)?,
             })
         });
-        trash_file_info 
+        trash_file_info
     }
 
     pub fn remove_trash_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<()> {
         let mut conn = self.pool.get().unwrap();
         let tx = conn.transaction()?;
 
-        let sql = "DELETE FROM trash_info WHERE dir_path = ? and file_name = ?";
+        let sql = "
+            DELETE FROM trash_info 
+            WHERE dir_path = ? AND file_name = ?";
         tx.execute(sql, (dir_path, file_name))?;
         tx.commit()?;
         Ok(())
@@ -863,9 +896,31 @@ impl DatabaseManager {
         let mut conn = self.pool.get().unwrap();
         let tx = conn.transaction()?;
 
-        let sql = "DELETE FROM trash_info WHERE md5 = ?";
+        let sql = "
+            DELETE FROM trash_info 
+            WHERE md5 = ?";
         let usize = tx.execute(sql, [md5])?;
         tx.commit()?;
         Ok(usize)
+    }
+
+    pub fn restore_trash_file_by_path(
+        &self,
+        trash_file_info: &TrashFileInfo,
+    ) -> Result<(), DfrError> {
+        let mut file_info = FileInfo::new(
+            trash_file_info.get_file_path().clone().as_str(),
+            0,
+            Local::now(),
+        )?;
+        // set file md5 manually
+        file_info.inode_info.md5 = Some(trash_file_info.md5.clone());
+        // Restore the file to its original location
+        self.insert_file_info(&file_info)?;
+        self.remove_trash_file_by_path(
+            trash_file_info.dir_path.as_str(),
+            trash_file_info.file_name.as_str(),
+        )?;
+        Ok(())
     }
 }

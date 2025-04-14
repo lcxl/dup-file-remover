@@ -176,7 +176,7 @@ pub async fn scan_all_files(
         &ignore_path_set,
     )
     .await;
-    db.remove_deleted_inode()?;
+    db.remove_deleted_inodes()?;
     {
         let mut status = scan_status.lock().await;
         status.started = false;

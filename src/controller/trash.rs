@@ -1,6 +1,10 @@
-use std::{fs::Permissions, os::unix::fs::PermissionsExt, path::PathBuf};
+use std::{
+    fs::Permissions,
+    os::unix::fs::{chown, PermissionsExt},
+    path::PathBuf,
+};
 
-use actix_web::{delete, get, web, Error as AWError, HttpResponse};
+use actix_web::{delete, get, post, web, Error as AWError, HttpResponse};
 use log::{error, info, warn};
 use tokio::fs::{self, File};
 
@@ -9,7 +13,10 @@ use crate::{
     model::{
         common::{ErrorCode, RestResponse},
         settings::TrashListSettings,
-        trash::{DeleteTrashFileRequest, DeleteTrashFilesRequest, RestoreTrashFileRequest, RestoreTrashFilesRequest},
+        trash::{
+            DeleteTrashFileRequest, DeleteTrashFilesRequest, RestoreTrashFileRequest,
+            RestoreTrashFilesRequest,
+        },
     },
     utils::error::DfrError,
     SharedSettings,
@@ -126,7 +133,10 @@ pub async fn delete_trash_files(
 ) -> Result<HttpResponse, AWError> {
     let delete_file_request = requst_json.into_inner();
 
-    info!("Delete files {:?} successfully", delete_file_request.files);
+    info!(
+        "Delete trash files {:?} successfully",
+        delete_file_request.files
+    );
     Ok(HttpResponse::Ok().finish())
 }
 
@@ -139,7 +149,7 @@ pub async fn delete_trash_files(
         (status = 501, description = "Not implemented"),
     ),
 )]
-#[delete("/trash/file/restore")]
+#[post("/trash/file/restore")]
 pub async fn restore_trash_file(
     requst_json: web::Json<RestoreTrashFileRequest>,
     db: web::Data<PoolDatabaseManager>,
@@ -179,26 +189,29 @@ pub async fn restore_trash_file(
         .set_permissions(Permissions::from_mode(trash_file_info.permissions))
         .await?;
 
-    std::os::unix::fs::chown(origin_file_path.as_path(), Some(0), Some(0))?;
+    chown(
+        origin_file_path.as_path(),
+        Some(trash_file_info.gid),
+        Some(trash_file_info.uid),
+    )?;
 
     // check if trash file is unique
     let mut query_list_params = TrashListSettings::default();
-    query_list_params.md5 = Some(trash_file_info.md5);
+    query_list_params.md5 = Some(trash_file_info.md5.clone());
 
     let trash_file_list = db.list_trash_files(&query_list_params)?;
     if trash_file_list.trash_file_info_list.len() == 1 {
         info!("Remove trash file {:?}", file);
         fs::remove_file(file.as_path()).await?;
     }
-    db.remove_trash_file_by_path(&trash_file_info.dir_path, &trash_file_info.file_name)?;
+    db.restore_trash_file_by_path(&trash_file_info)?;
 
     info!(
-        "Restore trash file '{}/{}' successfully",
-        delete_trash_file_request.file_name, delete_trash_file_request.dir_path
+        "Restore trash file '{}' successfully",
+        trash_file_info.get_file_path()
     );
     Ok(HttpResponse::Ok().finish())
 }
-
 
 #[utoipa::path(
     summary = "Restore trash files",
@@ -209,12 +222,15 @@ pub async fn restore_trash_file(
         (status = 501, description = "Not implemented"),
     ),
 )]
-#[delete("/trash/files/restore")]
+#[post("/trash/files/restore")]
 pub async fn restore_trash_files(
     requst_json: web::Json<RestoreTrashFilesRequest>,
 ) -> Result<HttpResponse, AWError> {
     let restore_file_request = requst_json.into_inner();
 
-    info!("Restore files {:?} successfully", restore_file_request.files);
+    info!(
+        "Restore files {:?} successfully",
+        restore_file_request.files
+    );
     Ok(HttpResponse::Ok().finish())
 }
