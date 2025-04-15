@@ -265,7 +265,7 @@ impl DatabaseManager {
         self.query_inode_info_do(&conn, sql, [dev_id, node_id])
     }
 
-    pub fn get_inode_info_do_by_id(&self, conn: &Connection, id: u64) -> Result<InodeInfoDO> {
+    fn get_inode_info_do_by_id(&self, conn: &Connection, id: u64) -> Result<InodeInfoDO> {
         let sql = "
         SELECT inode, dev_id, permissions, nlink, uid, gid, created, modified, md5, size, id
         FROM inode_info
@@ -300,7 +300,7 @@ impl DatabaseManager {
         })
     }
 
-    pub fn query_file_info_do_by_path(
+    fn query_file_info_do_by_path(
         &self,
         conn: &Connection,
         dir_path: &str,
@@ -310,7 +310,7 @@ impl DatabaseManager {
         FROM file_info 
         WHERE dir_path = ? and file_name = ?";
         let mut stmt = conn.prepare(sql)?;
-        let file_iter = stmt.query_row([dir_path, file_name], |row| {
+        let result = stmt.query_row([dir_path, file_name], |row| {
             Ok(FileInfoDO {
                 inode_info_id: row.get(0)?,
                 dir_path: row.get(1)?,
@@ -320,7 +320,7 @@ impl DatabaseManager {
                 version: row.get(5)?,
             })
         });
-        file_iter
+        result
     }
 
     pub fn get_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<FileInfo> {
@@ -373,12 +373,36 @@ impl DatabaseManager {
         Ok(files)
     }
 
+    fn _remove_file_by_path(
+        &self,
+        conn: &Connection,
+        dir_path: &str,
+        file_name: &str,
+    ) -> Result<()> {
+        let file_info_do = self.query_file_info_do_by_path(conn, dir_path, file_name)?;
+
+        let sql = "SELECT COUNT(*) FROM file_info where inode_info_id = ?";
+        let file_count = conn.query_row(sql, [file_info_do.inode_info_id], |row| {
+            let file_count: u64 = row.get(0)?;
+            Ok(file_count)
+        })?;
+
+        // delete file info from db
+        let sql = "DELETE FROM file_info WHERE dir_path = ? AND file_name = ?";
+        conn.execute(sql, (dir_path, file_name))?;
+
+        if file_count <= 1 {
+            // delete inode info from db
+            self.remove_inode_by_id(conn, file_info_do.inode_info_id)?;
+        }
+        Ok(())
+    }
+
+    /// Remove file by path
     pub fn remove_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<()> {
         let mut conn = self.pool.get().unwrap();
         let tx = conn.transaction()?;
-
-        let sql = "DELETE FROM file_info WHERE dir_path = ? and file_name = ?";
-        tx.execute(sql, (dir_path, file_name))?;
+        self._remove_file_by_path(&tx, dir_path, file_name)?;
         tx.commit()?;
         Ok(())
     }
@@ -434,7 +458,7 @@ impl DatabaseManager {
     }
 
     /// remove not existed inodes from database
-    pub fn remove_inode_by_id(&self, conn: &Connection, id: u64) -> Result<usize> {
+    fn remove_inode_by_id(&self, conn: &Connection, id: u64) -> Result<usize> {
         let sql = "
             DELETE FROM inode_info 
             WHERE id =?";
@@ -450,23 +474,11 @@ impl DatabaseManager {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let md5 = file_info.inode_info.md5.clone().unwrap();
-        let file_info_do =
-            self.query_file_info_do_by_path(&tx, &file_info.dir_path, &file_info.file_name)?;
-
-        let sql = "SELECT COUNT(*) FROM file_info where inode_info_id = ?";
-        let file_count = tx.query_row(sql, [file_info_do.inode_info_id], |row| {
-            let file_count: u64 = row.get(0)?;
-            Ok(file_count)
-        })?;
-
-        // delete file info from db
-        let sql = "DELETE FROM file_info WHERE dir_path = ? AND file_name = ?";
-        tx.execute(sql, (&file_info.dir_path, &file_info.file_name))?;
-
-        if file_count <= 1 {
-            // delete inode info from db
-            self.remove_inode_by_id(&tx, file_info_do.inode_info_id)?;
-        }
+        self._remove_file_by_path(
+            &tx,
+            file_info.dir_path.as_str(),
+            file_info.file_name.as_str(),
+        )?;
 
         let sql = "
             INSERT OR REPLACE INTO trash_info (dir_path, file_name, file_extension, remove_time, permissions, uid, gid, created, modified, md5, size) 
