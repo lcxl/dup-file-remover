@@ -1,5 +1,5 @@
 use std::{
-    fs::Permissions,
+    fs::{FileTimes, Permissions},
     os::unix::fs::{chown, PermissionsExt},
     path::PathBuf,
 };
@@ -188,7 +188,12 @@ pub async fn restore_trash_file(
     restore_file
         .set_permissions(Permissions::from_mode(trash_file_info.permissions))
         .await?;
-
+    let std_file = restore_file.into_std().await;
+    // set modified time
+    // FIXME we can not set create time by using std library
+    let times = FileTimes::new().set_modified(trash_file_info.modified.into());
+    std_file.set_times(times)?;
+    // set owner
     chown(
         origin_file_path.as_path(),
         Some(trash_file_info.gid),
