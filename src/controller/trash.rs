@@ -196,8 +196,8 @@ pub async fn restore_trash_file(
     // set owner
     chown(
         origin_file_path.as_path(),
-        Some(trash_file_info.gid),
         Some(trash_file_info.uid),
+        Some(trash_file_info.gid),
     )?;
 
     // check if trash file is unique
