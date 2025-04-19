@@ -1,7 +1,7 @@
 use std::{fs, ops::Deref, path::PathBuf, sync::Arc};
 
 use chrono::{DateTime, Local};
-use log::{error, info};
+use log::{debug, error, info};
 use rusqlite::{params_from_iter, Connection, Params, Result, ToSql};
 
 use crate::{
@@ -170,7 +170,7 @@ impl DatabaseManager {
         let last_insert_id = if inode_info_do_result.is_err() {
             let query_error = inode_info_do_result.err().unwrap();
             match query_error {
-                rusqlite::Error::QueryReturnedNoRows => info!(
+                rusqlite::Error::QueryReturnedNoRows => debug!(
                     "Inode {} (dev_id: {}) not found in database, try to insert, error: {:?}",
                     file_info.inode_info.inode, file_info.inode_info.dev_id, query_error
                 ),
