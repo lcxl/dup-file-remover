@@ -117,7 +117,7 @@ impl FileInfo {
         let file = File::open(file_path).await?;
         let mut hasher = Md5::new();
         let mut reader = BufReader::new(file);
-        let mut buffer = [0; 8192];
+        let mut buffer = [0; 65536];
         let mut file_sizes = 0;
         while let Ok(n) = reader.read(&mut buffer).await {
             if n == 0 {

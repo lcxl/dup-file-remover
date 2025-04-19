@@ -309,19 +309,28 @@ async fn scan_file(
                 info!("File '{}' is changed, need to update, db inode info: {:?}, current inode info: {:?}", file_info.file_path, db_file_info.inode_info , file_info.inode_info);
             }
         }
-        Err(error) => match error {
-            rusqlite::Error::QueryReturnedNoRows => {
-                debug!(
-                    "File '{}' not found in database, add it",
-                    file_info.file_path
-                );
-            }
+        Err(dfr_error) => match dfr_error {
+            DfrError::RusqliteError(error) => match error {
+                rusqlite::Error::QueryReturnedNoRows => {
+                    debug!(
+                        "File '{}' not found in database, add it",
+                        file_info.file_path
+                    );
+                }
+                _ => {
+                    error!(
+                        "Error querying file {} in database: {:?}",
+                        file_info.file_path, error
+                    );
+                    return Err(DfrError::RusqliteError(error));
+                }
+            },
             _ => {
                 error!(
-                    "Error querying file {} in database: {:?}",
-                    file_info.file_path, error
+                    "Error when querying file {} in database: {:?}",
+                    file_info.file_path, dfr_error
                 );
-                return Err(DfrError::RusqliteError(error));
+                return Err(dfr_error);
             }
         },
     }
@@ -329,6 +338,9 @@ async fn scan_file(
     // update file md5 and insert into db
     file_info.update_md5().await?;
     db.insert_file_info(&file_info)?;
-    debug!("Insert file info '{}' to database succeed", file_info.file_path);
+    debug!(
+        "Insert file info '{}' to database succeed",
+        file_info.file_path
+    );
     Ok(())
 }
