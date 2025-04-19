@@ -275,20 +275,18 @@ const TableList: React.FC = () => {
           description={intl.formatMessage({ id: "pages.searchTable.optionDeleteConfirmDescription" })}
           onConfirm={
             async () => {
-              console.log("Begin to delete trash file: ", record.dir_path, "/", record.file_name);
-              const response = await deleteTrashFile({
-                dir_path: record.dir_path,
-                file_name: record.file_name
-              }).catch((err) => {
-                console.log("request deleteTrashFile error: " + err)
-              });
-              if (!response) {
-                return;
+              try {
+                console.log("Begin to delete trash file: ", record.dir_path, "/", record.file_name);
+                const response = await deleteTrashFile({
+                  dir_path: record.dir_path,
+                  file_name: record.file_name
+                });
+                console.log("Deleted trash file: ", record.dir_path, "/", record.file_name, response);
+                setCurrentRow(undefined);
+                actionRef.current?.reloadAndRest?.();
+              } catch (err) {
+                console.log("Request deleteTrashFile error: " + err);
               }
-
-              console.log("deleted trash file: ", record.dir_path, "/", record.file_name, response);
-              setCurrentRow(undefined);
-              actionRef.current?.reloadAndRest?.();
             }
           }
         >
@@ -301,20 +299,18 @@ const TableList: React.FC = () => {
           description={intl.formatMessage({ id: "pages.searchTable.optionRestoreConfirmDescription" })}
           onConfirm={
             async () => {
-              console.log("Begin to restore trash file: ", record.dir_path, "/", record.file_name);
-              const response = await restoreTrashFile({
-                dir_path: record.dir_path,
-                file_name: record.file_name
-              }).catch((err) => {
-                console.log("request restoreTrashFile error: " + err)
-              });
-              if (!response) {
-                return;
+              try {
+                console.log("Begin to restore trash file: ", record.dir_path, "/", record.file_name);
+                const response = await restoreTrashFile({
+                  dir_path: record.dir_path,
+                  file_name: record.file_name
+                });
+                console.log("Restored trash file: ", record.dir_path, "/", record.file_name, response);
+                setCurrentRow(undefined);
+                actionRef.current?.reloadAndRest?.();
+              } catch (err) {
+                console.log("Request restoreTrashFile error: " + err);
               }
-
-              console.log("restored trash file: ", record.dir_path, "/", record.file_name, response);
-              setCurrentRow(undefined);
-              actionRef.current?.reloadAndRest?.();
             }
           }
         >

@@ -323,16 +323,16 @@ impl DatabaseManager {
         result
     }
 
-    pub fn get_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<FileInfo> {
-        let conn = self.pool.get().unwrap();
+    pub fn get_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<FileInfo, DfrError> {
+        let conn = self.pool.get()?;
         let file_info_do = self.query_file_info_do_by_path(&conn, dir_path, file_name)?;
         let inode_info_do = self.get_inode_info_do_by_id(&conn, file_info_do.inode_info_id)?;
         let file_info = FileInfo::from_do(inode_info_do.inode_info, file_info_do);
         return Ok(file_info);
     }
 
-    pub fn get_file_list_by_md5(&self, md5: &str) -> Result<Vec<FileInfo>> {
-        let conn = self.pool.get().unwrap();
+    pub fn get_file_list_by_md5(&self, md5: &str) -> Result<Vec<FileInfo>, DfrError> {
+        let conn = self.pool.get()?;
         let sql = "SELECT 
         a1.inode, a1.dev_id, a1.permissions, a1.nlink, a1.uid, a1.gid, a1.created, a1.modified, a1.md5, a1.size,
         a2.dir_path, a2.file_name, a2.file_extension, a2.scan_time, a2.version
@@ -399,8 +399,8 @@ impl DatabaseManager {
     }
 
     /// Remove file by path
-    pub fn remove_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<()> {
-        let mut conn = self.pool.get().unwrap();
+    pub fn remove_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<(), DfrError> {
+        let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         self._remove_file_by_path(&tx, dir_path, file_name)?;
         tx.commit()?;
@@ -408,8 +408,8 @@ impl DatabaseManager {
     }
 
     /// remove not existed files from database based on dir_path and version
-    pub fn remove_deleted_files(&self, dir_path: &str, version: u64) -> Result<()> {
-        let mut conn = self.pool.get().unwrap();
+    pub fn remove_deleted_files(&self, dir_path: &str, version: u64) -> Result<(), DfrError> {
+        let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let sql = "DELETE FROM file_info WHERE dir_path = ? and version != ?";
         let update_rows = tx.execute(sql, (dir_path, version))?;
@@ -424,8 +424,8 @@ impl DatabaseManager {
     }
 
     /// remove not existed files from database based on version
-    pub fn remove_deleted_files_by_version(&self, version: u64) -> Result<()> {
-        let mut conn = self.pool.get().unwrap();
+    pub fn remove_deleted_files_by_version(&self, version: u64) -> Result<(), DfrError> {
+        let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let sql = "DELETE FROM file_info WHERE version != ?";
         let update_rows = tx.execute(sql, [version])?;
@@ -440,8 +440,8 @@ impl DatabaseManager {
     }
 
     /// remove not existed inodes from database
-    pub fn remove_deleted_inodes(&self) -> Result<()> {
-        let mut conn = self.pool.get().unwrap();
+    pub fn remove_deleted_inodes(&self) -> Result<(), DfrError> {
+        let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
 
         let sql = "
@@ -665,15 +665,14 @@ impl DatabaseManager {
         let trans = conn.transaction()?;
         let mut stmt = trans.prepare(&count_sql)?;
 
-        let count_iter = stmt.query_map(params_from_iter(count_params.iter()), |row| {
+        let count_result = stmt.query_map(params_from_iter(count_params.iter()), |row| {
             let count: u64 = row.get(0)?;
             Ok(count)
         });
         // get total count
-        // FIXME thread 'actix-rt|system:0|arbiter:4' panicked at src/database/sqlite.rs:477:55:
-        // called `Result::unwrap()` on an `Err` value: SqliteFailure(Error { code: DatabaseBusy, extended_code: 5 }, Some("database is locked"))
-        // note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-        let total_count = count_iter?.next().unwrap().unwrap();
+        // FIXME thread 'actix-rt|system:0|arbiter:2' panicked at src/database/sqlite.rs:676:55:
+        // called `Result::unwrap()` on an `Err` value: SqliteFailure(Error { code: DatabaseCorrupt, extended_code: 11 }, Some("database disk image is malformed"))
+        let total_count = count_result?.next().unwrap()?;
 
         let mut stmt = trans.prepare(&sql)?;
         let file_iter = stmt.query_map(params_from_iter(params.iter()), |row| {
@@ -836,7 +835,7 @@ impl DatabaseManager {
         });
         // get total count
 
-        let total_count = count_iter?.next().unwrap().unwrap();
+        let total_count = count_iter?.next().unwrap()?;
 
         let mut stmt = trans.prepare(&sql)?;
         let file_iter = stmt.query_map(params_from_iter(params.iter()), |row| {
@@ -867,8 +866,12 @@ impl DatabaseManager {
         })
     }
 
-    pub fn get_trash_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<TrashFileInfo> {
-        let conn = self.pool.get().unwrap();
+    pub fn get_trash_file_by_path(
+        &self,
+        dir_path: &str,
+        file_name: &str,
+    ) -> Result<TrashFileInfo, DfrError> {
+        let conn = self.pool.get()?;
         let sql = "
             SELECT dir_path, file_name, file_extension, remove_time, permissions, uid, gid, created, modified, md5, size
             FROM trash_info 
@@ -889,23 +892,27 @@ impl DatabaseManager {
                 size: row.get(10)?,
             })
         });
-        trash_file_info
+        Ok(trash_file_info?)
     }
 
-    pub fn remove_trash_file_by_path(&self, dir_path: &str, file_name: &str) -> Result<()> {
-        let mut conn = self.pool.get().unwrap();
+    pub fn remove_trash_file_by_path(
+        &self,
+        dir_path: &str,
+        file_name: &str,
+    ) -> Result<usize, DfrError> {
+        let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
 
         let sql = "
             DELETE FROM trash_info 
             WHERE dir_path = ? AND file_name = ?";
-        tx.execute(sql, (dir_path, file_name))?;
+        let usize = tx.execute(sql, (dir_path, file_name))?;
         tx.commit()?;
-        Ok(())
+        Ok(usize)
     }
 
-    pub fn remove_trash_file_by_md5(&self, md5: &str) -> Result<usize> {
-        let mut conn = self.pool.get().unwrap();
+    pub fn remove_trash_file_by_md5(&self, md5: &str) -> Result<usize, DfrError> {
+        let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
 
         let sql = "
