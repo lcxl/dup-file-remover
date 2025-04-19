@@ -12,9 +12,10 @@ const Admin: React.FC = () => {
   const intl = useIntl();
   // scaning state to track if the scan is running or not
   const [scaning, setScaning] = useState<boolean>(false);
-  const [timerId, setTimerId] = useState<NodeJS.Timeout | null>(null);
+  //const [timerId, setTimerId] = useState<NodeJS.Timeout | null>(null);
   const [scanStatus, setScanStatus] = useState<API.RestResponseScanStatus | null>(null);
   const scaningRef = useRef(scaning);
+  const timerIdRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     scaningRef.current = scaning;
@@ -44,13 +45,22 @@ const Admin: React.FC = () => {
         }
       }
       const id = setTimeout(requestScanStatus, timeout);
-      setTimerId(id);
+      //setTimerId(id);
+      timerIdRef.current = id;
     }
     const id = setTimeout(requestScanStatus, 0);
-    setTimerId(id);
+    //setTimerId(id);
+    timerIdRef.current = id;
 
     return () => {
-      clearTimeout(timerId!); // 组件卸载时清除定时器
+      /*
+      if (timerId) {
+        clearTimeout(timerId); // 组件卸载时清除定时器
+      }
+        */
+      if (timerIdRef.current) {
+        clearTimeout(timerIdRef.current); // 组件卸载时清除定时器
+      }
     };
   }, []);
   const formRef = useRef<
