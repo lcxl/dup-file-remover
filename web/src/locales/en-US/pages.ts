@@ -64,7 +64,7 @@ export default {
   'pages.searchTable.chosen': 'chosen',
   'pages.searchTable.item': 'item',
   'pages.searchTable.totalServiceCalls': 'Duplicates',
-  'pages.searchTable.tenThousand': '',
+  'pages.searchTable.itemUnit': 'item(s)',
   'pages.searchTable.batchDeletion': 'batch deletion',
   'pages.searchTable.batchApproval': 'batch approval',
   'pages.searchTable.fileModifiedTime': 'File modified time',

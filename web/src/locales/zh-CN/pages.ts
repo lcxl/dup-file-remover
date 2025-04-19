@@ -62,7 +62,7 @@ export default {
   'pages.searchTable.chosen': '已选择',
   'pages.searchTable.item': '项',
   'pages.searchTable.totalServiceCalls': '重复项',
-  'pages.searchTable.tenThousand': '个',
+  'pages.searchTable.itemUnit': '个',
   'pages.searchTable.batchDeletion': '批量删除',
   'pages.searchTable.batchApproval': '批量审批',
   'pages.searchTable.fileModifiedTime': '文件修改时间',

@@ -170,8 +170,8 @@ const TableList: React.FC = () => {
       hideInForm: true,
       hideInSearch: true,
       renderText: (val: string) =>
-        `${val}${intl.formatMessage({
-          id: 'pages.searchTable.tenThousand'
+        `${val} ${intl.formatMessage({
+          id: 'pages.searchTable.itemUnit'
         })}`,
     },
     {
