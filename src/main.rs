@@ -2,7 +2,7 @@ use log::{error, info};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let run_result = dup_file_remover::run();
+    let run_result = dup_file_remover::run().await;
     match run_result {
         Ok(server) => {
             info!("Server started successfully");

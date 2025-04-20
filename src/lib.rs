@@ -24,7 +24,7 @@ use controller::{
     settings::{query_settings, update_settings},
     trash::{
         delete_trash_file, delete_trash_files, list_trash_files, query_trash_list_settings,
-        restore_trash_file, restore_trash_files,
+        remove_trash_file_timer, restore_trash_file, restore_trash_files,
     },
     user::{get_current_user, get_notices, reject_anonymous_users},
 };
@@ -57,7 +57,7 @@ impl Deref for SharedSettings {
     }
 }
 
-pub fn run() -> Result<Server, DfrError> {
+pub async fn run() -> Result<Server, DfrError> {
     let args = Args::parse();
     let settings = Settings::new(&args)?;
 
@@ -93,6 +93,7 @@ pub fn run() -> Result<Server, DfrError> {
     // Create shared scan status for scan progress tracking
     let scan_status_data = web::Data::new(SharedScanStatus::new());
     let shared_settings = web::Data::new(SharedSettings::from(settings.clone()));
+    remove_trash_file_timer(shared_settings.clone(), database_manager.clone()).await?;
     // Start the server
     let mut http_server = HttpServer::new(move || {
         App::new()

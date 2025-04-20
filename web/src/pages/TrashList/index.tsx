@@ -138,6 +138,10 @@ const TableList: React.FC = () => {
           label: "jpg",
         });
         options.push({
+          value: "jpeg",
+          label: "jpeg",
+        });
+        options.push({
           value: "bmp",
           label: "bmp",
         });
@@ -146,12 +150,24 @@ const TableList: React.FC = () => {
           label: "png",
         });
         options.push({
+          value: "heic",
+          label: "heic",
+        });
+        options.push({
+          value: "gif",
+          label: "gif",
+        });
+        options.push({
           value: "avi",
           label: "avi",
         });
         options.push({
           value: "mp4",
           label: "mp4",
+        });
+        options.push({
+          value: "mkv",
+          label: "mkv",
         });
         return (
           <Select

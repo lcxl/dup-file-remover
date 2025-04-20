@@ -1,10 +1,14 @@
 # dup-file-remover
 
-dup file remover是一款查找和删除重复文件的软件，支持docker模式部署。后端使用 rust 编写，前端使用 ant design pro 解决方案。
+[English Readme](./README.md)
+
+**注意： 请对重要文件保持备份的习惯，任何使用此软件所造成的文件丢失将不负责任。**
+
+dup file remover 是一款查找和删除重复文件的软件，使用 docker 进行部署，专门适配了 NAS 等场景。使用前后端分离的技术方案，后端使用 rust 编写，前端使用 ant design pro 解决方案。
 
 ## 安装
 
-### Docker部署
+### Docker 部署
 
 docker部署非常简单，只需要拉取镜像并运行容器即可。运行命令如下：
 ```bash
@@ -39,7 +43,7 @@ services:
 
 * 克隆此代码仓库到本地；
 * 安装 docker，用于构建镜像，docker 安装参考 [docker 官方文档](https://docs.docker.com/engine/install/)
-* 执行 `build_docker.sh` 命令构建镜像，生成的镜像名称为 `dup-file-remover`
+* 执行 `sudo ./build_docker.sh` 命令构建镜像，生成的镜像名称为 `dup-file-remover`
 * 使用 `docker run` 命令运行镜像，参考上面的配置文件。
 
 ## 应用开发
@@ -54,9 +58,3 @@ services:
 * 打开游览器，访问 `http://localhost:8000` 查看应用。
 
 应用前端和后端使用openapi协议进行通信。当后端 HTTP 接口有变更时，在后端运行期间执行以下命令 `./update_web_openapi.sh` 对前端应用的 openapi 接口进行更新操作。
-
-## 前端组件
-
-antd使用：https://ant-design.antgroup.com/docs/react/introduce-cn
-
-umi使用 ：https://ant-design.antgroup.com/docs/react/use-with-umi-cn

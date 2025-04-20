@@ -5,11 +5,18 @@ use std::{
 };
 
 use actix_web::{delete, get, post, web, Error as AWError, HttpResponse};
+use chrono::Local;
 use log::{error, info, warn};
-use tokio::fs::{self, File};
+use tokio::{
+    fs::{self, File},
+    time::{self, Duration, Instant, MissedTickBehavior},
+};
 
 use crate::{
-    database::{file_info::TrashFileInfoList, sqlite::PoolDatabaseManager},
+    database::{
+        file_info::{TrashFileInfo, TrashFileInfoList},
+        sqlite::PoolDatabaseManager,
+    },
     model::{
         common::{ErrorCode, RestResponse},
         settings::TrashListSettings,
@@ -21,6 +28,90 @@ use crate::{
     utils::error::DfrError,
     SharedSettings,
 };
+
+pub async fn remove_trash_file_timer(
+    settings: web::Data<SharedSettings>,
+    db: PoolDatabaseManager,
+) -> Result<(), DfrError> {
+    let db = db.clone();
+    // Implement the logic to remove trash files based on the timer
+    tokio::spawn(async move {
+        // Logic to remove old trash files
+        info!("Start to setup removing trash file timer");
+        // Set up a timer to run every 60 secondss
+        let mut intv = time::interval_at(
+            Instant::now() + Duration::from_secs(5),
+            Duration::from_secs(60),
+        );
+        intv.set_missed_tick_behavior(MissedTickBehavior::Delay);
+        loop {
+            intv.tick().await;
+            let clear_trash_interval_s = {
+                let settings = settings.lock().await;
+                settings.system.clear_trash_interval_s
+            };
+
+            let mut query_list_params = TrashListSettings::default();
+            let need_remove_time =
+                Local::now() - Duration::from_secs(clear_trash_interval_s as u64);
+            query_list_params.end_removed_time = Some(need_remove_time.clone());
+            info!("Start to clear old trash files before {} ", need_remove_time);
+            loop {
+                let list_result = db.list_trash_files(&query_list_params);
+                if list_result.is_err() {
+                    error!("Failed to list trash files: {:?}", list_result.err());
+                    break;
+                }
+                let trash_files = list_result.unwrap();
+                for file in trash_files.trash_file_info_list.iter() {
+                    if let Err(e) = clear_trash_file(&settings, &db, file).await {
+                        error!("Failed to delete trash file {:?}: {:?}", file, e);
+                    } else {
+                        info!("Deleted trash file {:?}", file);
+                    }
+                }
+                if trash_files.trash_file_info_list.len() < query_list_params.page_count as usize {
+                    break;
+                }
+            }
+        }
+    });
+    Ok(())
+}
+
+async fn clear_trash_file(
+    settings: &SharedSettings,
+    db: &PoolDatabaseManager,
+    trash_file_info: &TrashFileInfo,
+) -> Result<(), DfrError> {
+    let trash_path = {
+        let settings = settings.lock().await;
+        settings.system.trash_path.clone()
+    };
+    let mut file = PathBuf::from(trash_path);
+    file.push(trash_file_info.md5.as_str());
+    if !file.exists() {
+        // remove trash file from db
+        db.remove_trash_file_by_md5(&trash_file_info.md5)?;
+        warn!(
+            "Trash file {:?} is not exist, remove trash file from db by md5",
+            file
+        );
+
+        return Ok(());
+    }
+    let mut query_list_params = TrashListSettings::default();
+    query_list_params.md5 = Some(trash_file_info.md5.clone());
+
+    let trash_file_list = db.list_trash_files(&query_list_params)?;
+    if trash_file_list.trash_file_info_list.len() == 1 {
+        fs::remove_file(file.as_path()).await?;
+    }
+    db.remove_trash_file_by_path(&trash_file_info.dir_path, &trash_file_info.file_name)?;
+
+    info!("Delete trash file '{:?}' successfully", file.as_path());
+    Ok(())
+}
 
 #[utoipa::path(
     summary = "Query list trash file settings",
@@ -81,40 +172,7 @@ pub async fn delete_trash_file(
         delete_trash_file_request.file_name.as_str(),
     )?;
 
-    let trash_path = {
-        let settings = settings.lock().await;
-        settings.system.trash_path.clone()
-    };
-    let mut file = PathBuf::from(trash_path);
-    file.push(db_file_info.md5.as_str());
-    if !file.exists() {
-        // remove trash file from db
-        db.remove_trash_file_by_md5(&db_file_info.md5)?;
-        warn!(
-            "Trash file {:?} is not exist, remove trash file from db by md5",
-            file
-        );
-
-        return Ok(
-            HttpResponse::Ok().json(RestResponse::succeed_with_message(format!(
-                "Trash file {} is not exist",
-                file.display()
-            ))),
-        );
-    }
-    let mut query_list_params = TrashListSettings::default();
-    query_list_params.md5 = Some(db_file_info.md5);
-
-    let trash_file_list = db.list_trash_files(&query_list_params)?;
-    if trash_file_list.trash_file_info_list.len() == 1 {
-        fs::remove_file(file.as_path()).await?;
-    }
-    db.remove_trash_file_by_path(&db_file_info.dir_path, &db_file_info.file_name)?;
-
-    info!(
-        "Delete trash file '{}/{}' successfully",
-        delete_trash_file_request.file_name, delete_trash_file_request.dir_path
-    );
+    clear_trash_file(&settings, db.get_ref(), &db_file_info).await?;
     Ok(HttpResponse::Ok().finish())
 }
 
