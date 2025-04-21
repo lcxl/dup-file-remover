@@ -29,7 +29,7 @@ use crate::{
     SharedSettings,
 };
 
-pub async fn remove_trash_file_timer(
+pub async fn setup_remove_trash_file_timer(
     settings: web::Data<SharedSettings>,
     db: PoolDatabaseManager,
 ) -> Result<(), DfrError> {

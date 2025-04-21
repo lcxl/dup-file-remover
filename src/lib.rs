@@ -24,7 +24,7 @@ use controller::{
     settings::{query_settings, update_settings},
     trash::{
         delete_trash_file, delete_trash_files, list_trash_files, query_trash_list_settings,
-        remove_trash_file_timer, restore_trash_file, restore_trash_files,
+        setup_remove_trash_file_timer, restore_trash_file, restore_trash_files,
     },
     user::{get_current_user, get_notices, reject_anonymous_users},
 };
@@ -32,7 +32,7 @@ use database::sqlite::PoolDatabaseManager;
 use model::{
     common::{ErrorCode, RestResponse},
     scan::SharedScanStatus,
-    settings::{Args, Settings},
+    settings::{Args, Settings, UserSettings},
 };
 use tokio::sync::Mutex;
 use utils::{error::DfrError, network::check_ipv6_available};
@@ -41,6 +41,7 @@ use utoipa_rapidoc::RapiDoc;
 use utoipa_redoc::{Redoc, Servable as _};
 use utoipa_scalar::{Scalar, Servable as _};
 use utoipa_swagger_ui::SwaggerUi;
+use uuid::Uuid;
 
 pub struct SharedSettings(pub Mutex<Settings>);
 
@@ -93,7 +94,25 @@ pub async fn run() -> Result<Server, DfrError> {
     // Create shared scan status for scan progress tracking
     let scan_status_data = web::Data::new(SharedScanStatus::new());
     let shared_settings = web::Data::new(SharedSettings::from(settings.clone()));
-    remove_trash_file_timer(shared_settings.clone(), database_manager.clone()).await?;
+
+    // check user and passwd
+    let passwd = {
+        let settings= shared_settings.lock().await;
+        settings.user.login_password.clone()
+    };
+    if passwd == UserSettings::default().login_password {
+        warn!("Password need to change");
+        let random_uuid = Uuid::new_v4();
+        let uuid_str = String::from(random_uuid);
+        let new_password = &uuid_str[..6];
+        let mut settings= shared_settings.lock().await;
+        settings.user.login_password = String::from(new_password);
+        info!("New random password: {}", new_password);
+        settings.save()?;
+    }
+
+    //setup remove trash file timer
+    setup_remove_trash_file_timer(shared_settings.clone(), database_manager.clone()).await?;
     // Start the server
     let mut http_server = HttpServer::new(move || {
         App::new()

@@ -181,7 +181,7 @@ impl Default for UserSettings {
     fn default() -> Self {
         Self {
             login_user_name: "admin".to_string(),
-            login_password: "password".to_string(),
+            login_password: "".to_string(),
         }
     }
 }
