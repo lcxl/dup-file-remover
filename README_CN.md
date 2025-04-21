@@ -46,6 +46,10 @@ services:
 * 执行 `sudo ./build_docker.sh` 命令构建镜像，生成的镜像名称为 `dup-file-remover`
 * 使用 `docker run` 命令运行镜像，参考上面的配置文件。
 
+## 使用手册
+
+参见：[使用手册](./docs/USAGE_CN.md)
+
 ## 应用开发
 
 如果你想进行开发，可以按照以下方式：

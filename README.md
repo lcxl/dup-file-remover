@@ -42,6 +42,11 @@ If you want to build from source code, you can follow these steps:
 * Execute the `build_docker.sh` command to build the image; the generated image name will be `dup-file-remover`
 * Run the image using the `docker run` command, referencing the above configuration file.
 
+## User Manual
+
+See：[User Manual](./docs/USAGE_EN.md)
+
+
 ## Application Development
 
 If you want to develop, you can follow these steps:
