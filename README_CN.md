@@ -2,20 +2,22 @@
 
 [English Readme](./README.md)
 
-**注意： 请对重要文件保持备份的习惯，任何使用此软件所造成的文件丢失将不负责任。**
+**注意：此软件目前处于测试阶段，请对重要文件保持备份的习惯，任何使用此软件所造成的文件丢失将不负责任。**
 
-dup file remover 是一款查找和删除重复文件的软件，使用 docker 进行部署，专门适配了 NAS 等场景。使用前后端分离的技术方案，后端使用 rust 编写，前端使用 ant design pro 解决方案。
+`Dup File Remover` 是一款查找和删除重复文件的软件，使用 docker 进行部署，专门适配了 NAS 等场景。使用前后端分离的技术方案，后端使用 rust 编写，前端使用 ant design pro 解决方案。
+
+![filelist](./docs/images/filelist_cn.png)
 
 ## 安装
 
 ### Docker 部署
 
-docker部署非常简单，只需要拉取镜像并运行容器即可。运行命令如下：
+docker 部署非常简单，只需要拉取镜像并运行容器即可。运行命令如下：
 ```bash
 docker run -d --name dup-file-remover \
     -p 8081:8081 \
-    -v /path/to/conf:/app/conf \
-    -v /path/to/data:/app/data \
+    -v /host/path/to/conf:/app/conf \
+    -v /host/path/to/data:/app/data \
     lcxl/dup-file-remover:latest
 ```
 
@@ -30,12 +32,11 @@ services:
       - "8081:8081"
     restart: unless-stopped
     volumes:
-      - /mnt/lcxlstorage/nasdata:/app/data
-      - /mnt/lcxlstorage/appconfig/dfr:/app/conf
-
+      - /host/path/to/conf:/app/data
+      - /host/path/to/data:/app/conf
 ```
 
-这里 `/path/to/conf` 和 `/path/to/data` 是配置文件和数据的存储目录，`/path/to/data` 要指向到删除重复文件的目录，并且需要有读写权限，否则程序运行可能会有问题。
+这里 `/app/conf` 和 `/app/data` 是配置文件和数据的存储目录，`/app/data` 要指向到删除重复文件的目录，并且需要有读写权限，否则程序运行可能会有问题。
 
 ## 从源码构建
 
@@ -43,7 +44,7 @@ services:
 
 * 克隆此代码仓库到本地；
 * 安装 docker，用于构建镜像，docker 安装参考 [docker 官方文档](https://docs.docker.com/engine/install/)
-* 执行 `sudo ./build_docker.sh` 命令构建镜像，生成的镜像名称为 `dup-file-remover`
+* 执行 `sudo ./build_docker.sh` 命令构建镜像，生成的镜像名称默认为 `lcxl/dup-file-remover:latest`
 * 使用 `docker run` 命令运行镜像，参考上面的配置文件。
 
 ## 使用手册
