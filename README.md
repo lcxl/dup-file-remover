@@ -1,4 +1,4 @@
-# dup-file-remover
+# Dup File Remover
 
 [中文说明](./README_CN.md)
 

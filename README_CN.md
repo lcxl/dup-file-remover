@@ -1,4 +1,4 @@
-# dup-file-remover
+# Dup File Remover
 
 [English Readme](./README.md)
 
