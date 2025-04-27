@@ -32,8 +32,8 @@ services:
       - "8081:8081"
     restart: unless-stopped
     volumes:
-      - /host/path/to/conf:/app/data
-      - /host/path/to/data:/app/conf
+      - /host/path/to/conf:/app/conf
+      - /host/path/to/data:/app/data
 ```
 
 这里 `/app/conf` 和 `/app/data` 是配置文件和数据的存储目录，`/app/data` 要指向到删除重复文件的目录，并且需要有读写权限，否则程序运行可能会有问题。

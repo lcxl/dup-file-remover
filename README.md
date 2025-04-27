@@ -31,8 +31,8 @@ services:
       - "8081:8081"
     restart: unless-stopped
     volumes:
-      - /host/path/to/conf:/app/data
-      - /host/path/to/data:/app/conf
+      - /host/path/to/conf:/app/conf
+      - /host/path/to/data:/app/data
 ```
 Here, `/app/conf` and `/app/data` are the directories for storing configuration files and data, respectively. The `/app/data` directory should point to where duplicate files will be removed and must have read/write permissions; otherwise, there may be issues with program execution.
 
